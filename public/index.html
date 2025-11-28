@@ -1,0 +1,204 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Wishing You 🎂 - Birthday Messages Platform</title>
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+  <!-- Background Animation -->
+  <div class="background-animation">
+    <div class="confetti"></div>
+    <div class="confetti"></div>
+    <div class="confetti"></div>
+    <div class="confetti"></div>
+    <div class="confetti"></div>
+  </div>
+
+  <!-- Navigation -->
+  <nav class="navbar">
+    <div class="container">
+      <div class="nav-brand">🎂 Wishing You</div>
+      <div class="nav-menu">
+        <button class="nav-link" onclick="showSection('home')">Home</button>
+        <button class="nav-link" onclick="showSection('send')">Send Message</button>
+        <button class="nav-link" onclick="showSection('view')">View Messages</button>
+        <button class="nav-link" id="authBtn" onclick="showSection('auth')">Login</button>
+        <button class="nav-link" id="profileBtn" onclick="showSection('profile')" style="display:none;">Profile</button>
+        <button class="nav-link" id="logoutBtn" onclick="logout()" style="display:none;">Logout</button>
+      </div>
+    </div>
+  </nav>
+
+  <!-- Hero Section -->
+  <section id="home-section" class="section active">
+    <div class="container hero">
+      <div class="hero-content">
+        <h1 class="hero-title">🎉 Wishing You</h1>
+        <p class="hero-subtitle">Send warm birthday wishes to anyone, anywhere in the world</p>
+        <div class="hero-buttons">
+          <button class="btn btn-primary" onclick="showSection('send')">
+            📝 Send a Birthday Message
+          </button>
+          <button class="btn btn-secondary" onclick="showSection('view')">
+            🎁 Open Your Gift
+          </button>
+        </div>
+      </div>
+      <div class="hero-animation">
+        <div class="gift-box">
+          🎁
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- Send Message Section -->
+  <section id="send-section" class="section">
+    <div class="container">
+      <div class="card">
+        <h2 class="card-title">📝 Send a Birthday Message</h2>
+        <form id="sendMessageForm">
+          <div class="form-group">
+            <label for="senderName">Your Name (Optional)</label>
+            <input type="text" id="senderName" placeholder="Leave blank to be Anonymous">
+          </div>
+          
+          <div class="form-group">
+            <label for="birthdayDate">Birthday Date (Who is this message for?)</label>
+            <input type="date" id="birthdayDate" required>
+            <small>Select the birthday date of the person you're wishing</small>
+          </div>
+
+          <div class="form-group">
+            <label for="messageText">Birthday Message *</label>
+            <textarea id="messageText" rows="6" placeholder="Write your heartfelt birthday wishes here..." required maxlength="1000"></textarea>
+            <small id="charCount">0 / 1000 characters</small>
+          </div>
+
+          <button type="submit" class="btn btn-primary btn-block">
+            🎂 Send Birthday Wishes
+          </button>
+        </form>
+      </div>
+    </div>
+  </section>
+
+  <!-- View Messages Section -->
+  <section id="view-section" class="section">
+    <div class="container">
+      <div class="card">
+        <h2 class="card-title">🎁 Open Your Birthday Gift</h2>
+        <p style="text-align: center; color: #666; margin-bottom: 20px;">
+          Select your birthday date to see all the wishes waiting for you!
+        </p>
+        
+        <form id="viewMessageForm">
+          <div class="form-group">
+            <label for="viewBirthdayDate">Select Birthday Date</label>
+            <input type="date" id="viewBirthdayDate" required>
+          </div>
+          <button type="submit" class="btn btn-primary btn-block">
+            🎉 Show Birthday Messages
+          </button>
+        </form>
+
+        <div id="messagesContainer" style="margin-top: 30px; display: none;">
+          <div class="messages-header">
+            <h3 id="messagesTitle"></h3>
+            <p id="messagesCount"></p>
+          </div>
+          <div id="messagesList"></div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- Auth Section (Login/Register) -->
+  <section id="auth-section" class="section">
+    <div class="container">
+      <div class="auth-container">
+        <!-- Login Form -->
+        <div class="card" id="loginCard">
+          <h2 class="card-title">🔐 Login</h2>
+          <form id="loginForm">
+            <div class="form-group">
+              <label for="loginEmail">Email</label>
+              <input type="email" id="loginEmail" required>
+            </div>
+            <div class="form-group">
+              <label for="loginPassword">Password</label>
+              <input type="password" id="loginPassword" required>
+            </div>
+            <button type="submit" class="btn btn-primary btn-block">Login</button>
+          </form>
+          <p class="auth-switch">
+            Don't have an account? 
+            <a href="#" onclick="toggleAuth(); return false;">Register here</a>
+          </p>
+        </div>
+
+        <!-- Register Form -->
+        <div class="card" id="registerCard" style="display: none;">
+          <h2 class="card-title">📝 Register</h2>
+          <form id="registerForm">
+            <div class="form-group">
+              <label for="registerUsername">Username</label>
+              <input type="text" id="registerUsername" required minlength="3">
+            </div>
+            <div class="form-group">
+              <label for="registerEmail">Email</label>
+              <input type="email" id="registerEmail" required>
+            </div>
+            <div class="form-group">
+              <label for="registerPassword">Password</label>
+              <input type="password" id="registerPassword" required minlength="6">
+            </div>
+            <div class="form-group">
+              <label for="registerBirthday">Your Birthday</label>
+              <input type="date" id="registerBirthday" required>
+              <small>You'll receive email notifications on your birthday!</small>
+            </div>
+            <button type="submit" class="btn btn-primary btn-block">Register</button>
+          </form>
+          <p class="auth-switch">
+            Already have an account? 
+            <a href="#" onclick="toggleAuth(); return false;">Login here</a>
+          </p>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- Profile Section -->
+  <section id="profile-section" class="section">
+    <div class="container">
+      <div class="card">
+        <h2 class="card-title">👤 My Profile</h2>
+        <div id="profileInfo"></div>
+        
+        <div style="margin-top: 30px;">
+          <h3>📩 Messages I Sent</h3>
+          <div id="sentMessages"></div>
+        </div>
+
+        <div style="margin-top: 30px;">
+          <h3>🎁 Messages I Received</h3>
+          <div id="receivedMessages"></div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- Toast Notification -->
+  <div id="toast" class="toast"></div>
+
+  <!-- Loading Spinner -->
+  <div id="loadingSpinner" class="loading-spinner" style="display: none;">
+    <div class="spinner"></div>
+  </div>
+
+  <script src="script.js"></script>
+</body>
+</html>
