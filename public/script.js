@@ -195,18 +195,31 @@ function updateAuthUI() {
   const authBtn = document.getElementById('authBtn');
   const profileBtn = document.getElementById('profileBtn');
   const calendarBtn = document.getElementById('calendarBtn');
-  const logoutBtn = document.getElementById('logoutBtn');
+  const profileLogoutBtn = document.getElementById('logoutProfileBtn');
 
   if (authToken) {
     authBtn.style.display = 'none';
     profileBtn.style.display = 'block';
     calendarBtn.style.display = 'block';
-    logoutBtn.style.display = 'block';
+    if (profileLogoutBtn) profileLogoutBtn.style.display = 'block';
   } else {
     authBtn.style.display = 'block';
     profileBtn.style.display = 'none';
     calendarBtn.style.display = 'none';
-    logoutBtn.style.display = 'none';
+    if (profileLogoutBtn) profileLogoutBtn.style.display = 'none';
+  }
+
+  // Ensure sender name input is visible for both guests and logged-in users
+  const senderGroup = document.getElementById('senderNameGroup');
+  const senderNameInput = document.getElementById('senderName');
+
+  if (senderGroup) senderGroup.style.display = 'block';
+  // Prefill name for logged-in users
+  if (authToken && currentUser && senderNameInput) {
+    senderNameInput.value = currentUser.username || '';
+  } else if (senderNameInput) {
+    // don't overwrite guest-entered names when not logged in
+    // leave as-is (empty or previously entered)
   }
 }
 
@@ -230,9 +243,14 @@ async function handleSendMessage(e) {
   e.preventDefault();
   showLoading();
 
-  const sender_name = document.getElementById('senderName').value || 'Anonymous';
+  let sender_name = 'Anonymous';
   const message_text = document.getElementById('messageText').value;
   const birthdayDate = document.getElementById('birthdayDate').value;
+  // Read the sender name input (prefilled for logged-in users)
+  const nameEl = document.getElementById('senderName');
+  if (nameEl) sender_name = nameEl.value.trim() || 'Anonymous';
+  // Optional recipient username
+  const recipient_username = (document.getElementById('recipientUsername') && document.getElementById('recipientUsername').value.trim()) || null;
 
   // Convert to MM-DD format (safer method to avoid timezone issues)
   const [year1, m1, d1] = birthdayDate.split('-');
@@ -247,7 +265,7 @@ async function handleSendMessage(e) {
     const response = await fetch(API_BASE + '/api/messages', {
       method: 'POST',
       headers,
-      body: JSON.stringify({ sender_name, message_text, target_birthday })
+      body: JSON.stringify({ sender_name, message_text, target_birthday, recipient_username })
     });
 
     const data = await response.json();

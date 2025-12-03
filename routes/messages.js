@@ -9,7 +9,7 @@ const mongoose = require('mongoose');
 // @access  Public (bisa anonymous atau logged in)
 router.post('/', async (req, res) => {
   try {
-    const { sender_name, message_text, target_birthday } = req.body;
+    const { sender_name, message_text, target_birthday, recipient_username } = req.body;
 
     // Validasi input
     if (!message_text || !target_birthday) {
@@ -45,7 +45,8 @@ router.post('/', async (req, res) => {
       sender_name: sender_name || 'Anonymous',
       message_text,
       target_birthday,
-      user_id: user_id
+      user_id: user_id,
+      recipient_username: recipient_username || null
     });
 
     await message.save();

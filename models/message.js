@@ -16,6 +16,11 @@ const messageSchema = new mongoose.Schema({
     required: [true, 'Target birthday is required'],
     match: [/^\d{2}-\d{2}$/, 'Birthday must be in MM-DD format']
   },
+  recipient_username: {
+    type: String,
+    trim: true,
+    default: null
+  },
   user_id: {
     type: mongoose.Schema.Types.ObjectId,
     ref: 'User',
