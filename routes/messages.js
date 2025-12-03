@@ -2,6 +2,7 @@ const express = require('express');
 const router = express.Router();
 const Message = require('../models/message');
 const auth = require('../middleware/auth');
+const mongoose = require('mongoose');
 
 // @route   POST /api/messages
 // @desc    Create new birthday message
@@ -221,6 +222,9 @@ router.get('/:date', async (req, res) => {
 router.put('/:id', auth, async (req, res) => {
   try {
     const { id } = req.params;
+    if (!mongoose.Types.ObjectId.isValid(id)) {
+      return res.status(400).json({ error: 'Invalid message id' });
+    }
     const { message_text, target_birthday } = req.body;
 
     // Cari message
@@ -263,6 +267,9 @@ router.put('/:id', auth, async (req, res) => {
 router.delete('/:id', auth, async (req, res) => {
   try {
     const { id } = req.params;
+    if (!mongoose.Types.ObjectId.isValid(id)) {
+      return res.status(400).json({ error: 'Invalid message id' });
+    }
 
     // Cari message
     const message = await Message.findById(id);
@@ -290,6 +297,9 @@ router.delete('/:id', auth, async (req, res) => {
 router.post('/:id/reactions', auth, async (req, res) => {
   try {
     const { id } = req.params;
+    if (!mongoose.Types.ObjectId.isValid(id)) {
+      return res.status(400).json({ error: 'Invalid message id' });
+    }
     const { emoji } = req.body;
 
     if (!emoji) {
@@ -335,6 +345,9 @@ router.post('/:id/reactions', auth, async (req, res) => {
 router.delete('/:id/reactions', auth, async (req, res) => {
   try {
     const { id } = req.params;
+    if (!mongoose.Types.ObjectId.isValid(id)) {
+      return res.status(400).json({ error: 'Invalid message id' });
+    }
 
     const message = await Message.findById(id);
 

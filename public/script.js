@@ -390,6 +390,13 @@ function displaySentMessages(data) {
   // Handle missing or malformed data
   const messages = data && data.messages ? data.messages : [];
 
+  console.log('displaySentMessages: received messages count =', messages.length);
+  try {
+    console.log('displaySentMessages ids =', messages.map(m => (m && (m._id ? (m._id.toString ? m._id.toString() : m._id) : (m.id || null)))));
+  } catch (e) {
+    console.warn('displaySentMessages: failed to map ids', e);
+  }
+
   if (!messages || messages.length === 0) {
     container.innerHTML = `
       <div class="empty-state">
@@ -399,6 +406,8 @@ function displaySentMessages(data) {
     `;
   } else {
     container.innerHTML = messages.map(msg => {
+      // Ensure we have a usable id string for data attributes
+      const safeId = (msg._id && msg._id.toString) ? msg._id.toString() : (msg.id ? msg.id : '');
       // Store data in data attributes instead of inline onclick
       return `
         <div class="message-card">
@@ -408,10 +417,10 @@ function displaySentMessages(data) {
           </div>
           <div class="message-text">${escapeHtml(msg.message_text)}</div>
           <div style="display: flex; gap: 10px; margin-top: 15px;">
-            <button class="edit-msg-btn" data-msg-id="${msg._id}" data-target-birthday="${msg.target_birthday}" data-msg-text="${msg.message_text}" style="flex: 1; padding: 8px; background: #007bff; color: white; border: none; border-radius: 4px; cursor: pointer; font-size: 13px;">
+            <button class="edit-msg-btn" data-msg-id="${safeId}" data-target-birthday="${msg.target_birthday}" data-msg-text="${msg.message_text}" style="flex: 1; padding: 8px; background: #007bff; color: white; border: none; border-radius: 4px; cursor: pointer; font-size: 13px;">
               ✏️ Edit
             </button>
-            <button class="delete-msg-btn" data-msg-id="${msg._id}" style="flex: 1; padding: 8px; background: #dc3545; color: white; border: none; border-radius: 4px; cursor: pointer; font-size: 13px;">
+            <button class="delete-msg-btn" data-msg-id="${safeId}" style="flex: 1; padding: 8px; background: #dc3545; color: white; border: none; border-radius: 4px; cursor: pointer; font-size: 13px;">
               🗑️ Delete
             </button>
           </div>
@@ -430,8 +439,14 @@ function displaySentMessages(data) {
     });
 
     document.querySelectorAll('.delete-msg-btn').forEach(btn => {
+      const id = btn.dataset.msgId;
+      if (!id) {
+        console.warn('Found delete button without id attribute', btn);
+        btn.style.outline = '2px solid orange';
+      }
       btn.addEventListener('click', function() {
         const msgId = this.dataset.msgId;
+        console.log('delete button clicked for id=', msgId);
         showDeleteMessageModal(msgId);
       });
     });
@@ -613,6 +628,12 @@ async function handleEditMessage(e) {
 let currentDeletingMessageId = null;
 
 function showDeleteMessageModal(messageId) {
+  // Validate the id early and refuse to open modal if invalid
+  if (!messageId || messageId === 'null' || messageId === 'undefined') {
+    console.error('showDeleteMessageModal called with invalid id:', messageId);
+    showToast('Invalid message selected. Please try again.', 'error');
+    return;
+  }
   currentDeletingMessageId = messageId;
   document.getElementById('deleteMessageModal').style.display = 'flex';
 }
@@ -623,11 +644,23 @@ function closeDeleteMessageModal() {
 }
 
 async function confirmDeleteMessage() {
+  // Capture the id BEFORE closing the modal (which clears the variable)
+  const messageIdToDelete = currentDeletingMessageId;
+  
+  // Defensive check: ensure we have a valid id before calling API
+  if (!messageIdToDelete || messageIdToDelete === 'null') {
+    console.error('confirmDeleteMessage called with invalid id:', messageIdToDelete);
+    closeDeleteMessageModal();
+    showToast('Invalid message selected. Please try again.', 'error');
+    return;
+  }
+  
   showLoading();
   closeDeleteMessageModal();
 
   try {
-    const response = await fetch(API_BASE + `/api/messages/${currentDeletingMessageId}`, {
+    console.log('Deleting message id:', messageIdToDelete);
+    const response = await fetch(API_BASE + `/api/messages/${messageIdToDelete}`, {
       method: 'DELETE',
       headers: { 'Authorization': `Bearer ${authToken}` }
     });
