@@ -3,6 +3,8 @@
 // ========================================
 let currentUser = null;
 let authToken = localStorage.getItem('token');
+// Base URL for API requests (ensure this matches your running server)
+const API_BASE = 'http://localhost:5000';
 
 // ========================================
 // INITIALIZATION
@@ -70,7 +72,7 @@ async function handleLogin(e) {
   const password = document.getElementById('loginPassword').value;
 
   try {
-    const response = await fetch('/api/auth/login', {
+    const response = await fetch(API_BASE + '/api/auth/login', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ email, password })
@@ -114,7 +116,7 @@ async function handleRegister(e) {
   const birthday_date = `${month}-${day}`;
 
   try {
-    const response = await fetch('/api/auth/register', {
+    const response = await fetch(API_BASE + '/api/auth/register', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ username, email, password, birthday_date })
@@ -204,7 +206,7 @@ async function handleSendMessage(e) {
       headers['Authorization'] = `Bearer ${authToken}`;
     }
 
-    const response = await fetch('/api/messages', {
+    const response = await fetch(API_BASE + '/api/messages', {
       method: 'POST',
       headers,
       body: JSON.stringify({ sender_name, message_text, target_birthday })
@@ -239,7 +241,7 @@ async function handleViewMessages(e) {
   const target_birthday = `${month}-${day}`;
 
   try {
-    const response = await fetch(`/api/messages/${target_birthday}`);
+    const response = await fetch(API_BASE + `/api/messages/${target_birthday}`);
     const data = await response.json();
 
     if (response.ok) {
@@ -308,7 +310,7 @@ async function loadUserProfile() {
   if (!authToken) return;
 
   try {
-    const response = await fetch('/api/auth/profile', {
+    const response = await fetch(API_BASE + '/api/auth/profile', {
       headers: { 'Authorization': `Bearer ${authToken}` }
     });
 
@@ -355,13 +357,13 @@ async function loadUserMessages() {
 
   try {
     // Load sent messages
-    const sentResponse = await fetch('/api/messages/user/sent', {
+    const sentResponse = await fetch(API_BASE + '/api/messages/user/sent', {
       headers: { 'Authorization': `Bearer ${authToken}` }
     });
     const sentData = await sentResponse.json();
 
     // Load received messages
-    const receivedResponse = await fetch('/api/messages/user/received', {
+    const receivedResponse = await fetch(API_BASE + '/api/messages/user/received', {
       headers: { 'Authorization': `Bearer ${authToken}` }
     });
     const receivedData = await receivedResponse.json();

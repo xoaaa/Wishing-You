@@ -1,19 +1,34 @@
 const nodemailer = require('nodemailer');
 
-// Setup transporter untuk Gmail
-const transporter = nodemailer.createTransport({
-  service: 'gmail',
-  auth: {
-    user: process.env.EMAIL_USER,
-    pass: process.env.EMAIL_PASS
-  }
-});
+// Configure transporter: prefer custom SMTP (EMAIL_HOST/PORT), otherwise fall back to Gmail
+const emailHost = process.env.EMAIL_HOST;
+const emailPort = process.env.EMAIL_PORT ? Number(process.env.EMAIL_PORT) : undefined;
+const emailSecure = process.env.EMAIL_SECURE === 'true';
+const emailUser = process.env.EMAIL_USER;
+const emailPass = process.env.EMAIL_PASS;
+
+let transporterConfig;
+if (emailHost && emailPort) {
+  transporterConfig = {
+    host: emailHost,
+    port: emailPort,
+    secure: typeof emailSecure === 'boolean' ? emailSecure : emailPort === 465,
+    auth: emailUser && emailPass ? { user: emailUser, pass: emailPass } : undefined
+  };
+} else {
+  transporterConfig = {
+    service: 'gmail',
+    auth: { user: emailUser, pass: emailPass }
+  };
+}
+
+const transporter = nodemailer.createTransport(transporterConfig);
 
 // Function untuk kirim email birthday notification
 const sendBirthdayEmail = async (userEmail, username, messageCount) => {
   try {
     const mailOptions = {
-      from: `"Wishing You 🎂" <${process.env.EMAIL_USER}>`,
+      from: process.env.EMAIL_FROM || `"Wishing You 🎂" <${process.env.EMAIL_USER}>`,
       to: userEmail,
       subject: `🎉 Happy Birthday, ${username}! 🎂`,
       html: `
@@ -155,6 +170,9 @@ const testEmailConnection = async () => {
     return true;
   } catch (error) {
     console.error('❌ Email service error:', error.message);
+    if (!emailUser || !emailPass) {
+      console.error('❌ Missing EMAIL_USER or EMAIL_PASS in .env');
+    }
     return false;
   }
 };

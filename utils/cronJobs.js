@@ -1,7 +1,7 @@
 const cron = require('node-cron');
 const User = require('../models/user');
 const Message = require('../models/message');
-const { sendBirthdayEmail } = require('./utils/emailService');
+const { sendBirthdayEmail } = require('./emailService');
 
 // Function untuk cek dan kirim birthday emails
 const checkBirthdaysAndSendEmails = async () => {

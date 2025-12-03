@@ -2,8 +2,8 @@ require('dotenv').config();
 const express = require('express');
 const path = require('path');
 const connectDB = require('./config/db');
-const { testEmailConnection } = require('/emailService');
-const { setupCronJobs } = require('/cronJobs');
+const { testEmailConnection } = require('./utils/emailService');
+const { setupCronJobs } = require('./utils/cronJobs');
 
 // Import routes
 const authRoutes = require('./routes/auth');
@@ -11,6 +11,24 @@ const messageRoutes = require('./routes/messages');
 
 const app = express();
 const PORT = process.env.PORT || 5000;
+
+// Ensure JWT secret exists in development; warn if missing
+if (!process.env.JWT_SECRET) {
+  // For development convenience create a temporary secret and warn the developer
+  process.env.JWT_SECRET = 'dev-secret-please-change';
+  console.warn('⚠️  Warning: JWT_SECRET is not set. Using a temporary development secret.\n⚠️  Set JWT_SECRET in your .env for production.');
+}
+
+// Simple CORS middleware to allow cross-origin requests during development
+app.use((req, res, next) => {
+  res.header('Access-Control-Allow-Origin', '*');
+  res.header('Access-Control-Allow-Headers', 'Origin, X-Requested-With, Content-Type, Accept, Authorization');
+  if (req.method === 'OPTIONS') {
+    res.header('Access-Control-Allow-Methods', 'GET,POST,PUT,PATCH,DELETE');
+    return res.sendStatus(200);
+  }
+  next();
+});
 
 // Connect to Database
 connectDB();
