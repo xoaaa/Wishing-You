@@ -378,7 +378,10 @@ async function loadUserMessages() {
 function displaySentMessages(data) {
   const container = document.getElementById('sentMessages');
 
-  if (data.messages.length === 0) {
+  // Handle missing or malformed data
+  const messages = data && data.messages ? data.messages : [];
+
+  if (!messages || messages.length === 0) {
     container.innerHTML = `
       <div class="empty-state">
         <div class="empty-state-icon">✉️</div>
@@ -386,7 +389,7 @@ function displaySentMessages(data) {
       </div>
     `;
   } else {
-    container.innerHTML = data.messages.map(msg => {
+    container.innerHTML = messages.map(msg => {
       return `
         <div class="message-card">
           <div class="message-header">
@@ -457,4 +460,123 @@ function escapeHtml(text) {
     "'": '&#039;'
   };
   return text.replace(/[&<>"']/g, m => map[m]);
+}
+
+// ========================================
+// DELETE ACCOUNT
+// ========================================
+function showDeleteAccountModal() {
+  document.getElementById('deleteAccountModal').style.display = 'flex';
+}
+
+function closeDeleteAccountModal() {
+  document.getElementById('deleteAccountModal').style.display = 'none';
+}
+
+async function confirmDeleteAccount() {
+  showLoading();
+  closeDeleteAccountModal();
+
+  try {
+    const response = await fetch(API_BASE + '/api/auth/profile', {
+      method: 'DELETE',
+      headers: { 'Authorization': `Bearer ${authToken}` }
+    });
+
+    if (response.ok) {
+      showToast('Account deleted successfully. Goodbye! 👋', 'success');
+      // Clear user data and redirect to home
+      authToken = null;
+      currentUser = null;
+      localStorage.removeItem('token');
+      updateAuthUI();
+      showSection('home');
+    } else {
+      const data = await response.json();
+      showToast(data.error || 'Failed to delete account', 'error');
+    }
+  } catch (error) {
+    console.error('Delete account error:', error);
+    showToast('Connection error. Please try again.', 'error');
+  } finally {
+    hideLoading();
+  }
+}
+
+// ========================================
+// EDIT PROFILE
+// ========================================
+function showEditProfileModal() {
+  // Pre-fill the form with current user data
+  if (currentUser) {
+    document.getElementById('editUsername').value = currentUser.username || '';
+    document.getElementById('editBirthday').value = convertBirthdayToDateInput(currentUser.birthday_date) || '';
+  }
+  document.getElementById('editProfileModal').style.display = 'flex';
+}
+
+function closeEditProfileModal() {
+  document.getElementById('editProfileModal').style.display = 'none';
+}
+
+// Convert MM-DD format to YYYY-MM-DD for date input (use current year)
+function convertBirthdayToDateInput(birthdayMmDd) {
+  if (!birthdayMmDd || !birthdayMmDd.includes('-')) return '';
+  const [month, day] = birthdayMmDd.split('-');
+  const year = new Date().getFullYear();
+  return `${year}-${month}-${day}`;
+}
+
+async function handleEditProfile(e) {
+  e.preventDefault();
+  showLoading();
+
+  const username = document.getElementById('editUsername').value.trim();
+  const birthdayDate = document.getElementById('editBirthday').value;
+
+  // Convert birthday back to MM-DD format
+  let birthday_date = null;
+  if (birthdayDate) {
+    const date = new Date(birthdayDate);
+    const month = String(date.getMonth() + 1).padStart(2, '0');
+    const day = String(date.getDate()).padStart(2, '0');
+    birthday_date = `${month}-${day}`;
+  }
+
+  try {
+    const payload = {};
+    if (username) payload.username = username;
+    if (birthday_date) payload.birthday_date = birthday_date;
+
+    if (Object.keys(payload).length === 0) {
+      showToast('Please fill in at least one field', 'error');
+      hideLoading();
+      return;
+    }
+
+    const response = await fetch(API_BASE + '/api/auth/profile', {
+      method: 'PUT',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${authToken}`
+      },
+      body: JSON.stringify(payload)
+    });
+
+    const data = await response.json();
+
+    if (response.ok) {
+      currentUser = data.user;
+      showToast('Profile updated successfully! 🎉', 'success');
+      displayProfile(currentUser);
+      closeEditProfileModal();
+    } else {
+      showToast(data.error || 'Failed to update profile', 'error');
+    }
+  } catch (error) {
+    console.error('Edit profile error:', error);
+    showToast('Connection error. Please try again.', 'error');
+  } finally {
+    hideLoading();
+  }
 }

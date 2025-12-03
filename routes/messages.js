@@ -21,12 +21,26 @@ router.post('/', async (req, res) => {
       return res.status(400).json({ error: 'Birthday must be in MM-DD format (e.g., 05-23)' });
     }
 
+    // Get user_id from auth middleware if logged in
+    let user_id = null;
+    const authHeader = req.header('Authorization');
+    if (authHeader) {
+      const token = authHeader.replace('Bearer ', '');
+      const jwt = require('jsonwebtoken');
+      try {
+        const decoded = jwt.verify(token, process.env.JWT_SECRET);
+        user_id = decoded.userId;
+      } catch (err) {
+        // Token verification failed, leave user_id as null
+      }
+    }
+
     // Buat message baru
     const message = new Message({
       sender_name: sender_name || 'Anonymous',
       message_text,
       target_birthday,
-      user_id: req.header('Authorization') ? req.user?._id : null // Jika ada token, simpan user_id
+      user_id: user_id
     });
 
     await message.save();
@@ -40,26 +54,38 @@ router.post('/', async (req, res) => {
   }
 });
 
-// @route   GET /api/messages/:date
-// @desc    Get all messages for specific birthday date
-// @access  Public
-router.get('/:date', async (req, res) => {
+// ===== SPECIFIC ROUTES (must come BEFORE generic :date route) =====
+
+// @route   GET /api/messages/user/sent
+// @desc    Get all messages sent by logged in user
+// @access  Private
+router.get('/user/sent', auth, async (req, res) => {
   try {
-    const { date } = req.params; // Format: MM-DD
-
-    // Validasi format
-    const dateRegex = /^\d{2}-\d{2}$/;
-    if (!dateRegex.test(date)) {
-      return res.status(400).json({ error: 'Date must be in MM-DD format (e.g., 05-23)' });
-    }
-
-    // Cari semua messages untuk tanggal tersebut
-    const messages = await Message.find({ target_birthday: date })
-      .populate('user_id', 'username') // Populate username jika ada
-      .sort({ created_at: -1 }); // Urutkan dari terbaru
+    const messages = await Message.find({ user_id: req.user._id })
+      .sort({ created_at: -1 });
 
     res.json({
-      date,
+      count: messages.length,
+      messages
+    });
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+});
+
+// @route   GET /api/messages/user/received
+// @desc    Get all messages received by logged in user (based on their birthday)
+// @access  Private
+router.get('/user/received', auth, async (req, res) => {
+  try {
+    const userBirthday = req.user.birthday_date;
+
+    const messages = await Message.find({ target_birthday: userBirthday })
+      .populate('user_id', 'username')
+      .sort({ created_at: -1 });
+
+    res.json({
+      birthday: userBirthday,
       count: messages.length,
       messages
     });
@@ -127,15 +153,26 @@ router.get('/longest/all', async (req, res) => {
   }
 });
 
-// @route   GET /api/messages/user/sent
-// @desc    Get all messages sent by logged in user
-// @access  Private
-router.get('/user/sent', auth, async (req, res) => {
+// @route   GET /api/messages/search/query
+// @desc    Search messages by keyword
+// @access  Public
+router.get('/search/query', async (req, res) => {
   try {
-    const messages = await Message.find({ user_id: req.user._id })
+    const { q } = req.query; // Query parameter: ?q=happy
+
+    if (!q) {
+      return res.status(400).json({ error: 'Search query is required' });
+    }
+
+    // Cari messages yang mengandung keyword
+    const messages = await Message.find({
+      message_text: { $regex: q, $options: 'i' } // Case-insensitive search
+    })
+      .populate('user_id', 'username')
       .sort({ created_at: -1 });
 
     res.json({
+      query: q,
       count: messages.length,
       messages
     });
@@ -144,19 +181,28 @@ router.get('/user/sent', auth, async (req, res) => {
   }
 });
 
-// @route   GET /api/messages/user/received
-// @desc    Get all messages received by logged in user (based on their birthday)
-// @access  Private
-router.get('/user/received', auth, async (req, res) => {
-  try {
-    const userBirthday = req.user.birthday_date;
+// ===== GENERIC ROUTES (must come AFTER specific routes) =====
 
-    const messages = await Message.find({ target_birthday: userBirthday })
-      .populate('user_id', 'username')
-      .sort({ created_at: -1 });
+// @route   GET /api/messages/:date
+// @desc    Get all messages for specific birthday date
+// @access  Public
+router.get('/:date', async (req, res) => {
+  try {
+    const { date } = req.params; // Format: MM-DD
+
+    // Validasi format
+    const dateRegex = /^\d{2}-\d{2}$/;
+    if (!dateRegex.test(date)) {
+      return res.status(400).json({ error: 'Date must be in MM-DD format (e.g., 05-23)' });
+    }
+
+    // Cari semua messages untuk tanggal tersebut
+    const messages = await Message.find({ target_birthday: date })
+      .populate('user_id', 'username') // Populate username jika ada
+      .sort({ created_at: -1 }); // Urutkan dari terbaru
 
     res.json({
-      birthday: userBirthday,
+      date,
       count: messages.length,
       messages
     });
