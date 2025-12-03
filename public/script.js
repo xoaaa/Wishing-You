@@ -23,6 +23,15 @@ document.addEventListener('DOMContentLoaded', () => {
     const charCount = e.target.value.length;
     document.getElementById('charCount').textContent = `${charCount} / 1000 characters`;
   });
+
+  // Character counter for edit message
+  const editMessageText = document.getElementById('editMessageText');
+  if (editMessageText) {
+    editMessageText.addEventListener('input', (e) => {
+      const charCount = e.target.value.length;
+      document.getElementById('editCharCount').textContent = `${charCount} / 1000 characters`;
+    });
+  }
 });
 
 // ========================================
@@ -390,6 +399,7 @@ function displaySentMessages(data) {
     `;
   } else {
     container.innerHTML = messages.map(msg => {
+      // Store data in data attributes instead of inline onclick
       return `
         <div class="message-card">
           <div class="message-header">
@@ -397,16 +407,42 @@ function displaySentMessages(data) {
             <span class="message-date">${new Date(msg.created_at).toLocaleDateString()}</span>
           </div>
           <div class="message-text">${escapeHtml(msg.message_text)}</div>
+          <div style="display: flex; gap: 10px; margin-top: 15px;">
+            <button class="edit-msg-btn" data-msg-id="${msg._id}" data-target-birthday="${msg.target_birthday}" data-msg-text="${msg.message_text}" style="flex: 1; padding: 8px; background: #007bff; color: white; border: none; border-radius: 4px; cursor: pointer; font-size: 13px;">
+              ✏️ Edit
+            </button>
+            <button class="delete-msg-btn" data-msg-id="${msg._id}" style="flex: 1; padding: 8px; background: #dc3545; color: white; border: none; border-radius: 4px; cursor: pointer; font-size: 13px;">
+              🗑️ Delete
+            </button>
+          </div>
         </div>
       `;
     }).join('');
+
+    // Attach event listeners
+    document.querySelectorAll('.edit-msg-btn').forEach(btn => {
+      btn.addEventListener('click', function() {
+        const msgId = this.dataset.msgId;
+        const targetBirthday = this.dataset.targetBirthday;
+        const msgText = this.dataset.msgText;
+        showEditMessageModal(msgId, targetBirthday, msgText);
+      });
+    });
+
+    document.querySelectorAll('.delete-msg-btn').forEach(btn => {
+      btn.addEventListener('click', function() {
+        const msgId = this.dataset.msgId;
+        showDeleteMessageModal(msgId);
+      });
+    });
   }
 }
 
 function displayReceivedMessages(data) {
   const container = document.getElementById('receivedMessages');
+  const messages = data && data.messages ? data.messages : [];
 
-  if (data.messages.length === 0) {
+  if (!messages || messages.length === 0) {
     container.innerHTML = `
       <div class="empty-state">
         <div class="empty-state-icon">🎁</div>
@@ -414,7 +450,7 @@ function displayReceivedMessages(data) {
       </div>
     `;
   } else {
-    container.innerHTML = data.messages.map(msg => {
+    container.innerHTML = messages.map(msg => {
       return `
         <div class="message-card">
           <div class="message-header">
@@ -497,6 +533,114 @@ async function confirmDeleteAccount() {
     }
   } catch (error) {
     console.error('Delete account error:', error);
+    showToast('Connection error. Please try again.', 'error');
+  } finally {
+    hideLoading();
+  }
+}
+
+// ========================================
+// EDIT & DELETE MESSAGES
+// ========================================
+let currentEditingMessageId = null;
+
+function showEditMessageModal(messageId, targetBirthday, messageText) {
+  currentEditingMessageId = messageId;
+  document.getElementById('editMessageText').value = messageText;
+  
+  // Convert MM-DD to YYYY-MM-DD for date input
+  const year = new Date().getFullYear();
+  document.getElementById('editMessageBirthday').value = `${year}-${targetBirthday}`;
+  
+  // Update char count
+  const charCount = messageText.length;
+  document.getElementById('editCharCount').textContent = `${charCount} / 1000 characters`;
+  
+  document.getElementById('editMessageModal').style.display = 'flex';
+}
+
+function closeEditMessageModal() {
+  currentEditingMessageId = null;
+  document.getElementById('editMessageModal').style.display = 'none';
+}
+
+async function handleEditMessage(e) {
+  e.preventDefault();
+  showLoading();
+
+  const messageText = document.getElementById('editMessageText').value.trim();
+  const birthdayDate = document.getElementById('editMessageBirthday').value;
+
+  if (!messageText) {
+    showToast('Message cannot be empty', 'error');
+    hideLoading();
+    return;
+  }
+
+  // Convert to MM-DD format
+  const date = new Date(birthdayDate);
+  const month = String(date.getMonth() + 1).padStart(2, '0');
+  const day = String(date.getDate()).padStart(2, '0');
+  const target_birthday = `${month}-${day}`;
+
+  try {
+    const response = await fetch(API_BASE + `/api/messages/${currentEditingMessageId}`, {
+      method: 'PUT',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${authToken}`
+      },
+      body: JSON.stringify({ message_text: messageText, target_birthday })
+    });
+
+    const data = await response.json();
+
+    if (response.ok) {
+      showToast('Message updated successfully! ✏️', 'success');
+      closeEditMessageModal();
+      loadUserMessages(); // Refresh the messages list
+    } else {
+      showToast(data.error || 'Failed to update message', 'error');
+    }
+  } catch (error) {
+    console.error('Edit message error:', error);
+    showToast('Connection error. Please try again.', 'error');
+  } finally {
+    hideLoading();
+  }
+}
+
+let currentDeletingMessageId = null;
+
+function showDeleteMessageModal(messageId) {
+  currentDeletingMessageId = messageId;
+  document.getElementById('deleteMessageModal').style.display = 'flex';
+}
+
+function closeDeleteMessageModal() {
+  currentDeletingMessageId = null;
+  document.getElementById('deleteMessageModal').style.display = 'none';
+}
+
+async function confirmDeleteMessage() {
+  showLoading();
+  closeDeleteMessageModal();
+
+  try {
+    const response = await fetch(API_BASE + `/api/messages/${currentDeletingMessageId}`, {
+      method: 'DELETE',
+      headers: { 'Authorization': `Bearer ${authToken}` }
+    });
+
+    if (response.ok) {
+      showToast('Message deleted successfully! 🗑️', 'success');
+      loadUserMessages(); // Refresh the messages list
+    } else {
+      const data = await response.json();
+      showToast(data.error || 'Failed to delete message', 'error');
+    }
+  } catch (error) {
+    console.error('Delete message error:', error);
     showToast('Connection error. Please try again.', 'error');
   } finally {
     hideLoading();

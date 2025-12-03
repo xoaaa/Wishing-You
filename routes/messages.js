@@ -21,18 +21,22 @@ router.post('/', async (req, res) => {
       return res.status(400).json({ error: 'Birthday must be in MM-DD format (e.g., 05-23)' });
     }
 
-    // Get user_id from auth middleware if logged in
+    // Extract user_id from Authorization token if present
     let user_id = null;
     const authHeader = req.header('Authorization');
     if (authHeader) {
-      const token = authHeader.replace('Bearer ', '');
-      const jwt = require('jsonwebtoken');
       try {
+        const token = authHeader.replace('Bearer ', '');
+        const jwt = require('jsonwebtoken');
         const decoded = jwt.verify(token, process.env.JWT_SECRET);
         user_id = decoded.userId;
+        console.log('✅ Message POST: User authenticated, userId:', user_id);
       } catch (err) {
-        // Token verification failed, leave user_id as null
+        console.error('Token verification failed during message post:', err.message);
+        // Continue without user_id if token is invalid
       }
+    } else {
+      console.log('✅ Message POST: Anonymous message');
     }
 
     // Buat message baru
