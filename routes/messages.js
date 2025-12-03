@@ -62,16 +62,33 @@ router.post('/', async (req, res) => {
 // ===== SPECIFIC ROUTES (must come BEFORE generic :date route) =====
 
 // @route   GET /api/messages/user/sent
-// @desc    Get all messages sent by logged in user
+// @desc    Get all messages sent by logged in user (include recipient username when possible)
 // @access  Private
 router.get('/user/sent', auth, async (req, res) => {
   try {
     const messages = await Message.find({ user_id: req.user._id })
       .sort({ created_at: -1 });
 
+    // Try to attach a recipient username if a user exists with the same birthday
+    const User = require('../models/user');
+    const enhanced = [];
+
+    for (const msg of messages) {
+      const obj = msg.toObject ? msg.toObject() : msg;
+      try {
+        const recipient = await User.findOne({ birthday_date: obj.target_birthday }).select('username');
+        if (recipient) {
+          obj.recipient_username = recipient.username;
+        }
+      } catch (err) {
+        // ignore lookup errors and continue
+      }
+      enhanced.push(obj);
+    }
+
     res.json({
-      count: messages.length,
-      messages
+      count: enhanced.length,
+      messages: enhanced
     });
   } catch (error) {
     res.status(500).json({ error: error.message });

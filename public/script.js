@@ -361,11 +361,76 @@ async function loadUserProfile() {
       currentUser = data.user;
       updateAuthUI();
       displayProfile(data.user);
+      // Load comments received on user's sent messages
+      loadCommentsReceived();
     } else {
       logout();
     }
   } catch (error) {
     console.error('Failed to load profile:', error);
+  }
+}
+
+// ========================================
+// COMMENTS I RECEIVED (comments left on messages the user SENT)
+// ========================================
+async function loadCommentsReceived() {
+  if (!authToken) return;
+
+  try {
+    const response = await fetch(API_BASE + '/api/comments/user/received', {
+      headers: { 'Authorization': `Bearer ${authToken}` }
+    });
+
+    const data = await response.json();
+    const container = document.getElementById('commentsReceived');
+
+    if (!response.ok) {
+      console.error('Failed to load comments received:', data.error);
+      container.innerHTML = `<div style="color:#666;">Failed to load comments.</div>`;
+      return;
+    }
+
+    if (!data.received || data.received.length === 0) {
+        // Hide the entire section if there are no comments received
+        const section = document.getElementById('commentsReceivedSection');
+        if (section) section.style.display = 'none';
+        container.innerHTML = '';
+      return;
+    }
+      // Show section header
+      const section = document.getElementById('commentsReceivedSection');
+      if (section) section.style.display = 'block';
+
+      // Render each message as a card with nested comment cards inside
+      container.innerHTML = data.received.map(item => {
+        const comments = item.comments || [];
+        const commentsHtml = comments.map(c => `
+          <div style="background:#f8fafc;padding:10px;border-radius:6px;border:1px solid #e5e7eb;margin-bottom:8px;margin-left:8px;">
+            <div style="display:flex;justify-content:space-between;align-items:center;">
+              <strong style="color:#111">${escapeHtml(c.commenter_name || 'Anonymous')}</strong>
+              <small style="color:#6b7280">${new Date(c.created_at).toLocaleDateString()}</small>
+            </div>
+            <div style="margin-top:6px;color:#111">${escapeHtml(c.comment_text)}</div>
+          </div>
+        `).join('');
+
+        return `
+          <div style="background: #ffffff; border: 1px solid #e6e6e6; padding: 14px; border-radius: 8px; margin-bottom: 14px; box-shadow: 0 1px 2px rgba(0,0,0,0.03)">
+            <div style="font-weight:600;color:#111;margin-bottom:8px;">Your message</div>
+            <div style="color:#111;margin-bottom:8px;">${escapeHtml(item.message_text)}</div>
+            <div style="color:#6b7280;font-size:13px;margin-bottom:8px;">Sent on: ${new Date(item.created_at).toLocaleDateString()}</div>
+            <div style="margin-top:6px;">
+              ${commentsHtml || '<div style="color:#6b7280">No comments</div>'}
+            </div>
+          </div>
+        `;
+      }).join('');
+
+  } catch (err) {
+    console.error('Error loading comments received:', err);
+    const container = document.getElementById('commentsReceived');
+    if (container) container.innerHTML = `<div style="color:#666;">Connection error. Please try again.</div>`;
   }
 }
 
@@ -410,7 +475,8 @@ async function loadUserMessages() {
     const receivedData = await receivedResponse.json();
 
     displaySentMessages(sentData);
-    displayReceivedMessages(receivedData);
+    // Wait for received messages display (it will also fetch comments previews)
+    await displayReceivedMessages(receivedData);
   } catch (error) {
     console.error('Failed to load user messages:', error);
   }
@@ -440,16 +506,18 @@ function displaySentMessages(data) {
     container.innerHTML = messages.map(msg => {
       // Ensure we have a usable id string for data attributes
       const safeId = (msg._id && msg._id.toString) ? msg._id.toString() : (msg.id ? msg.id : '');
+      // Determine recipient display: prefer recipient_username provided by API, else show birthday
+      const recipientDisplay = msg.recipient_username ? `${msg.recipient_username}` : `To: ${msg.target_birthday}`;
       // Store data in data attributes instead of inline onclick
       return `
         <div class="message-card">
           <div class="message-header">
-            <span class="message-sender">To: ${msg.target_birthday}</span>
+            <span class="message-sender">${recipientDisplay}</span>
             <span class="message-date">${new Date(msg.created_at).toLocaleDateString()}</span>
           </div>
           <div class="message-text">${escapeHtml(msg.message_text)}</div>
           <div style="display: flex; gap: 10px; margin-top: 15px;">
-            <button class="edit-msg-btn" data-msg-id="${safeId}" data-target-birthday="${msg.target_birthday}" data-msg-text="${msg.message_text}" style="flex: 1; padding: 8px; background: #007bff; color: white; border: none; border-radius: 4px; cursor: pointer; font-size: 13px;">
+            <button class="edit-msg-btn" data-msg-id="${safeId}" data-target-birthday="${msg.target_birthday}" data-msg-text="${escapeHtml(msg.message_text)}" style="flex: 1; padding: 8px; background: #007bff; color: white; border: none; border-radius: 4px; cursor: pointer; font-size: 13px;">
               ✏️ Edit
             </button>
             <button class="delete-msg-btn" data-msg-id="${safeId}" style="flex: 1; padding: 8px; background: #dc3545; color: white; border: none; border-radius: 4px; cursor: pointer; font-size: 13px;">
@@ -485,7 +553,7 @@ function displaySentMessages(data) {
   }
 }
 
-function displayReceivedMessages(data) {
+async function displayReceivedMessages(data) {
   const container = document.getElementById('receivedMessages');
   const messages = data && data.messages ? data.messages : [];
 
@@ -496,20 +564,67 @@ function displayReceivedMessages(data) {
         <p>No birthday messages for you yet.</p>
       </div>
     `;
-  } else {
-    container.innerHTML = messages.map(msg => {
-      return `
-        <div class="message-card">
-          <div class="message-header">
-            <span class="message-sender">
-              ${msg.sender_name === 'Anonymous' ? '🎭 Anonymous' : '👤 ' + msg.sender_name}
-            </span>
-            <span class="message-date">${new Date(msg.created_at).toLocaleDateString()}</span>
-          </div>
-          <div class="message-text">${escapeHtml(msg.message_text)}</div>
+    return;
+  }
+
+  // Render message cards with a placeholder for comments preview
+  container.innerHTML = messages.map(msg => {
+    const safeId = (msg._id && msg._id.toString) ? msg._id.toString() : (msg.id ? msg.id : '');
+    const created = new Date(msg.created_at).toLocaleDateString();
+
+    return `
+      <div class="message-card" id="received-msg-${safeId}">
+        <div class="message-header">
+          <span class="message-sender">${msg.sender_name === 'Anonymous' ? '🎭 Anonymous' : '👤 ' + msg.sender_name}</span>
+          <span class="message-date">${created}</span>
         </div>
-      `;
-    }).join('');
+        <div class="message-text">${escapeHtml(msg.message_text)}</div>
+        <div id="received-comments-${safeId}" style="margin-top:10px;">
+          <small style="color:#666;">Loading comments...</small>
+        </div>
+        <div style="margin-top:8px;">
+          <button onclick="showCommentsModal('${safeId}')" style="background:#6b7280;color:#fff;border:none;padding:6px 10px;border-radius:4px;cursor:pointer;font-size:12px;">
+            View All Comments
+          </button>
+        </div>
+      </div>
+    `;
+  }).join('');
+
+  // For each message, fetch its comments and render a small preview
+  for (const msg of messages) {
+    const safeId = (msg._id && msg._id.toString) ? msg._id.toString() : (msg.id ? msg.id : '');
+    const commentsContainer = document.getElementById(`received-comments-${safeId}`);
+    if (!commentsContainer) continue;
+
+    try {
+      const resp = await fetch(API_BASE + `/api/comments/${safeId}`);
+      const json = await resp.json();
+      if (resp.ok && Array.isArray(json.comments)) {
+        const comments = json.comments.slice(0, 2); // show up to 2 recent comments
+        if (comments.length === 0) {
+          commentsContainer.innerHTML = `<small style="color:#666;">No comments yet</small>`;
+        } else {
+          commentsContainer.innerHTML = comments.map(c => `
+            <div style="background:#f3f4f6;padding:8px;border-radius:6px;margin-bottom:6px;">
+              <strong style="color:#374151">${escapeHtml(c.commenter_name || 'Anonymous')}</strong>
+              <span style="color:#6b7280;font-size:12px;margin-left:8px;">${new Date(c.created_at).toLocaleDateString()}</span>
+              <div style="margin-top:6px;color:#111;font-size:14px;">${escapeHtml(c.comment_text)}</div>
+            </div>
+          `).join('');
+          if (json.count > 2) {
+            const more = document.createElement('div');
+            more.innerHTML = `<small style="color:#6b7280;">${json.count - 2} more comment(s) — <a href="#" onclick="showCommentsModal('${safeId}');return false;">View all</a></small>`;
+            commentsContainer.appendChild(more);
+          }
+        }
+      } else {
+        commentsContainer.innerHTML = `<small style="color:#666;">Failed to load comments</small>`;
+      }
+    } catch (err) {
+      console.error('Failed to load comments for message', safeId, err);
+      commentsContainer.innerHTML = `<small style="color:#666;">Failed to load comments</small>`;
+    }
   }
 }
 
@@ -1179,6 +1294,8 @@ async function handleAddComment(e) {
       // Clear edit state
       currentEditingCommentId = null;
       loadCommentsForMessage(message_id);
+      // Refresh "Comments I Received" (in case the current user is the message owner)
+      try { loadCommentsReceived(); } catch (e) { /* ignore */ }
     } else {
       showToast(data.error || (currentEditingCommentId ? 'Failed to update comment' : 'Failed to post comment'), 'error');
     }
