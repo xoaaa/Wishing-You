@@ -11,7 +11,7 @@ const Birthday = require('../models/birthday'); // Model yang baru dibuat
 router.post('/', auth, async (req, res) => {
   try {
 
-    const { name, date, notes, birthday_date } = req.body;
+    const { name, date, notes, birthday_date, description } = req.body;
     // Accept both 'date' and 'birthday_date' for compatibility
     let rawDate = date || birthday_date;
     if (!name || !rawDate) {
@@ -43,11 +43,15 @@ router.post('/', auth, async (req, res) => {
     const year = new Date().getFullYear();
     const dateObj = new Date(`${year}-${mmdd}`);
 
+    // Use description if provided; fall back to notes
+    const desc = typeof description === 'string' ? description : (typeof notes === 'string' ? notes : undefined);
+
     const birthday = new Birthday({
       userId: req.user._id,
       name,
       date: dateObj,
-      notes,
+      notes: desc,
+      description: desc,
       birthday_date: mmdd // Store MM-DD string for frontend compatibility
     });
 
@@ -79,7 +83,7 @@ router.get('/', auth, async (req, res) => {
 router.put('/:id', auth, async (req, res) => {
   try {
 
-    const { name, date, notes, birthday_date } = req.body;
+    const { name, date, notes, birthday_date, reminder_enabled, description } = req.body;
     let rawDate = date || birthday_date;
     let mmdd = null;
     if (rawDate) {
@@ -106,9 +110,15 @@ router.put('/:id', auth, async (req, res) => {
     // Build update object
     const updateObj = {};
     if (name) updateObj.name = name;
-    if (notes) updateObj.notes = notes;
+    // Accept either description or notes from client
+    const desc = typeof description === 'string' ? description : (typeof notes === 'string' ? notes : undefined);
+    if (typeof desc !== 'undefined') {
+      updateObj.notes = desc;
+      updateObj.description = desc;
+    }
     if (dateObj) updateObj.date = dateObj;
     if (mmdd) updateObj.birthday_date = mmdd;
+    if (typeof reminder_enabled !== 'undefined') updateObj.reminder_enabled = reminder_enabled;
 
     let birthday = await Birthday.findOneAndUpdate(
       { _id: req.params.id, userId: req.user.id },
@@ -135,8 +145,8 @@ router.delete('/:id', auth, async (req, res) => {
   try {
     // Pastikan ID ulang tahun yang akan dihapus adalah milik pengguna yang sedang login
     const birthday = await Birthday.findOneAndDelete({ 
-        _id: req.params.id, 
-        userId: req.user.id 
+      _id: req.params.id, 
+      userId: req.user._id 
     });
 
     if (!birthday) {

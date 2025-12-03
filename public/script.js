@@ -32,6 +32,16 @@ document.addEventListener('DOMContentLoaded', () => {
       document.getElementById('editCharCount').textContent = `${charCount} / 1000 characters`;
     });
   }
+
+  // Character counter for birthday description (add/edit)
+  const birthdayDesc = document.getElementById('birthdayDesc');
+  if (birthdayDesc) {
+    birthdayDesc.addEventListener('input', (e) => {
+      const charCount = e.target.value.length;
+      const el = document.getElementById('birthdayDescCount');
+      if (el) el.textContent = `${charCount} / 500 characters`;
+    });
+  }
 });
 
 // ========================================
@@ -950,16 +960,31 @@ async function showEditBirthdayModal(birthdayId) {
       if (birthday) {
         currentEditingBirthdayId = birthdayId;
         document.getElementById('birthdayModalTitle').textContent = ' Edit Birthday Reminder';
-        document.getElementById('birthdayName').value = birthday.name;
-        document.getElementById('birthdayDesc').value = birthday.description;
-        document.getElementById('birthdayReminder').checked = birthday.reminder_enabled;
-        
-        // Convert MM-DD to YYYY-MM-DD for date input
-        const [month, day] = birthday.birthday_date.split('-');
-        const year = new Date().getFullYear();
-        document.getElementById('birthdayDateModal').value = `${year}-${month}-${day}`;
-        
-        document.getElementById('birthdayDescCount').textContent = `${birthday.description.length} / 500 characters`;
+        document.getElementById('birthdayName').value = birthday.name || '';
+
+        // Description may be undefined
+        const desc = birthday.description || '';
+        document.getElementById('birthdayDesc').value = desc;
+        document.getElementById('birthdayDescCount').textContent = `${desc.length} / 500 characters`;
+
+        // reminder_enabled may be undefined in older records; default to true
+        const reminderFlag = typeof birthday.reminder_enabled === 'boolean' ? birthday.reminder_enabled : true;
+        document.getElementById('birthdayReminder').checked = reminderFlag;
+
+        // Determine date: prefer birthday_date (MM-DD), else fallback to date field
+        let mmdd = birthday.birthday_date;
+        if (!mmdd && birthday.date) {
+          const d = new Date(birthday.date);
+          mmdd = `${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;
+        }
+        if (mmdd) {
+          const [month, day] = mmdd.split('-');
+          const year = new Date().getFullYear();
+          document.getElementById('birthdayDateModal').value = `${year}-${month}-${day}`;
+        } else {
+          document.getElementById('birthdayDateModal').value = '';
+        }
+
         document.getElementById('birthdayModal').style.display = 'flex';
       } else {
         showToast('Birthday not found', 'error');

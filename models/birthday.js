@@ -2,6 +2,11 @@
 const mongoose = require('mongoose');
 
 const BirthdaySchema = new mongoose.Schema({
+    // Status pengingat (enabled/disabled)
+    reminder_enabled: {
+      type: Boolean,
+      default: true,
+    },
   // Menghubungkan ulang tahun dengan pengguna yang menyimpannya
   userId: {
     type: mongoose.Schema.Types.ObjectId,
@@ -25,8 +30,13 @@ const BirthdaySchema = new mongoose.Schema({
     required: true,
     match: [/^\d{2}-\d{2}$/, 'Birthday must be in MM-DD format']
   },
-  // Keterangan atau catatan tambahan (opsional)
+  // Keterangan atau catatan tambahan (opsional) - keep both names for compatibility
   notes: {
+    type: String,
+    trim: true,
+  },
+  // New: description is used by the frontend (same content as notes)
+  description: {
     type: String,
     trim: true,
   },
