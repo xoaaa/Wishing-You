@@ -42,6 +42,16 @@ document.addEventListener('DOMContentLoaded', () => {
       if (el) el.textContent = `${charCount} / 500 characters`;
     });
   }
+
+  // Character counter for comment
+  const commentText = document.getElementById('commentText');
+  if (commentText) {
+    commentText.addEventListener('input', (e) => {
+      const charCount = e.target.value.length;
+      const el = document.getElementById('commentCharCount');
+      if (el) el.textContent = `${charCount} / 500 characters`;
+    });
+  }
 });
 
 // ========================================
@@ -222,7 +232,7 @@ async function handleSendMessage(e) {
 
   const sender_name = document.getElementById('senderName').value || 'Anonymous';
   const message_text = document.getElementById('messageText').value;
-  const birthdayDate = document.getElementById('birthdayDateModal').value;
+  const birthdayDate = document.getElementById('birthdayDate').value;
 
   // Convert to MM-DD format (safer method to avoid timezone issues)
   const [year1, m1, d1] = birthdayDate.split('-');
@@ -321,6 +331,11 @@ function displayMessages(data) {
               ${msg.reactions.map(r => `<span class="reaction-badge">${r.emoji}</span>`).join('')}
             </div>
           ` : ''}
+          <div style="margin-top: 12px;">
+            <button onclick="showCommentsModal('${msg._id}')" style="background: #667eea; color: white; border: none; padding: 8px 12px; border-radius: 4px; cursor: pointer; font-size: 13px;">
+              💬 Comments
+            </button>
+          </div>
         </div>
       `;
     }).join('');
@@ -805,7 +820,7 @@ async function handleBirthdaySubmit(e) {
   showLoading();
 
   const name = document.getElementById('birthdayName').value.trim();
-  const birthdayDate = document.getElementById('birthdayDateModal').value;
+  const birthdayDate = document.getElementById('birthdayDate').value;
   const description = document.getElementById('birthdayDesc').value.trim();
   const reminder_enabled = document.getElementById('birthdayReminder').checked;
 
@@ -1039,4 +1054,221 @@ async function confirmDeleteBirthday() {
     } finally {
         hideLoading();
     }
+}
+
+// ========================================
+// COMMENTS (NEW: CRUD for message comments)
+// ========================================
+let currentCommentingMessageId = null;
+let currentEditingCommentId = null;
+let currentDeletingCommentId = null;
+
+function showCommentsModal(messageId) {
+  currentCommentingMessageId = messageId;
+  document.getElementById('commentModalTitle').textContent = `💬 Comments on this message`;
+  document.getElementById('commentForm').reset();
+  document.getElementById('commentText').value = '';
+  document.getElementById('commentCharCount').textContent = '0 / 500 characters';
+  document.getElementById('commentModal').style.display = 'flex';
+  loadCommentsForMessage(messageId);
+}
+
+function closeCommentModal() {
+  currentCommentingMessageId = null;
+  document.getElementById('commentModal').style.display = 'none';
+}
+
+async function loadCommentsForMessage(messageId) {
+  try {
+    const response = await fetch(API_BASE + `/api/comments/${messageId}`);
+    const data = await response.json();
+
+    if (response.ok) {
+      displayComments(data.comments);
+    } else {
+      console.error('Failed to load comments:', data.error);
+    }
+  } catch (error) {
+    console.error('Error loading comments:', error);
+  }
+}
+
+function displayComments(comments) {
+  const container = document.getElementById('commentsList');
+
+  if (!comments || comments.length === 0) {
+    container.innerHTML = `
+      <div style="padding: 20px; text-align: center; color: #999;">
+        <p>No comments yet. Be the first to comment!</p>
+      </div>
+    `;
+    return;
+  }
+
+  container.innerHTML = comments.map(comment => {
+    const createdDate = new Date(comment.created_at).toLocaleDateString('en-US', {
+      month: 'short',
+      day: 'numeric',
+      year: 'numeric'
+    });
+
+    return `
+      <div style="background: #f9fafb; border-left: 4px solid #667eea; padding: 12px; margin-bottom: 12px; border-radius: 4px;">
+        <div style="display: flex; justify-content: space-between; align-items: start; margin-bottom: 8px;">
+          <div>
+            <strong style="color: #667eea;">${escapeHtml(comment.commenter_name)}</strong>
+            <span style="color: #999; font-size: 12px; margin-left: 8px;">${createdDate}</span>
+          </div>
+          <div style="display: flex; gap: 5px;">
+            <button onclick="showEditCommentModal('${comment._id}', '${escapeHtml(comment.comment_text).replace(/'/g, "\\'")}', '${currentCommentingMessageId}')" style="background: #4CAF50; color: white; border: none; padding: 4px 8px; border-radius: 3px; cursor: pointer; font-size: 11px;">
+              ✏️
+            </button>
+            <button onclick="showDeleteCommentModal('${comment._id}')" style="background: #dc3545; color: white; border: none; padding: 4px 8px; border-radius: 3px; cursor: pointer; font-size: 11px;">
+              🗑️
+            </button>
+          </div>
+        </div>
+        <p style="margin: 0; color: #333; font-size: 14px; line-height: 1.5;">${escapeHtml(comment.comment_text)}</p>
+      </div>
+    `;
+  }).join('');
+}
+
+async function handleAddComment(e) {
+  e.preventDefault();
+  showLoading();
+
+  const commenter_name = document.getElementById('commentName').value || 'Anonymous';
+  const comment_text = document.getElementById('commentText').value.trim();
+  const message_id = currentCommentingMessageId;
+
+  if (!comment_text) {
+    showToast('Comment cannot be empty', 'error');
+    hideLoading();
+    return;
+  }
+
+  try {
+    const headers = { 'Content-Type': 'application/json' };
+    if (authToken) {
+      headers['Authorization'] = `Bearer ${authToken}`;
+    }
+
+    let response;
+    // If editing an existing comment, perform PUT; otherwise POST a new comment
+    if (currentEditingCommentId) {
+      response = await fetch(API_BASE + `/api/comments/${currentEditingCommentId}`, {
+        method: 'PUT',
+        headers,
+        body: JSON.stringify({ comment_text })
+      });
+    } else {
+      response = await fetch(API_BASE + '/api/comments', {
+        method: 'POST',
+        headers,
+        body: JSON.stringify({ message_id, commenter_name, comment_text })
+      });
+    }
+
+    const data = await response.json();
+
+    if (response.ok) {
+      const successMsg = currentEditingCommentId ? 'Comment updated! ✏️' : 'Comment posted! 💬';
+      showToast(successMsg, 'success');
+      document.getElementById('commentForm').reset();
+      // Clear edit state
+      currentEditingCommentId = null;
+      loadCommentsForMessage(message_id);
+    } else {
+      showToast(data.error || (currentEditingCommentId ? 'Failed to update comment' : 'Failed to post comment'), 'error');
+    }
+  } catch (error) {
+    console.error('Comment submit error:', error);
+    showToast('Connection error. Please try again.', 'error');
+  } finally {
+    hideLoading();
+  }
+}
+
+function showEditCommentModal(commentId, commentText, messageId) {
+  currentEditingCommentId = commentId;
+  document.getElementById('commentText').value = commentText;
+  document.getElementById('commentCharCount').textContent = `${commentText.length} / 500 characters`;
+  // Note: we could show edit mode UI here, but for simplicity we just reload after edit
+}
+
+async function saveEditComment() {
+  if (!currentEditingCommentId) return;
+
+  showLoading();
+  const comment_text = document.getElementById('commentText').value.trim();
+
+  if (!comment_text) {
+    showToast('Comment cannot be empty', 'error');
+    hideLoading();
+    return;
+  }
+
+  try {
+    const response = await fetch(API_BASE + `/api/comments/${currentEditingCommentId}`, {
+      method: 'PUT',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${authToken}`
+      },
+      body: JSON.stringify({ comment_text })
+    });
+
+    const data = await response.json();
+
+    if (response.ok) {
+      showToast('Comment updated! ✏️', 'success');
+      currentEditingCommentId = null;
+      loadCommentsForMessage(currentCommentingMessageId);
+    } else {
+      showToast(data.error || 'Failed to update comment', 'error');
+    }
+  } catch (error) {
+    console.error('Edit comment error:', error);
+    showToast('Connection error. Please try again.', 'error');
+  } finally {
+    hideLoading();
+  }
+}
+
+let currentDeletingCommentForMessage = null;
+
+function showDeleteCommentModal(commentId) {
+  currentDeletingCommentId = commentId;
+  currentDeletingCommentForMessage = currentCommentingMessageId;
+  if (confirm('Are you sure you want to delete this comment?')) {
+    confirmDeleteComment();
+  }
+}
+
+async function confirmDeleteComment() {
+  if (!currentDeletingCommentId) return;
+
+  showLoading();
+
+  try {
+    const response = await fetch(API_BASE + `/api/comments/${currentDeletingCommentId}`, {
+      method: 'DELETE',
+      headers: { 'Authorization': `Bearer ${authToken}` }
+    });
+
+    if (response.ok) {
+      showToast('Comment deleted! 🗑️', 'success');
+      loadCommentsForMessage(currentDeletingCommentForMessage);
+    } else {
+      const data = await response.json();
+      showToast(data.error || 'Failed to delete comment', 'error');
+    }
+  } catch (error) {
+    console.error('Delete comment error:', error);
+    showToast('Connection error. Please try again.', 'error');
+  } finally {
+    currentDeletingCommentId = null;
+    hideLoading();
+  }
 }

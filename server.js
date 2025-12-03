@@ -9,6 +9,7 @@ const { setupCronJobs } = require('./utils/cronJobs');
 const authRoutes = require('./routes/auth');
 const messageRoutes = require('./routes/messages');
 const birthdayRoutes = require('./routes/birthdays');
+const commentRoutes = require('./routes/comments');
 
 const app = express();
 const PORT = process.env.PORT || 5000;
@@ -51,6 +52,7 @@ app.use(express.static(path.join(__dirname, 'public')));
 app.use('/api/auth', authRoutes);
 app.use('/api/messages', messageRoutes);
 app.use('/api/birthdays', birthdayRoutes);
+app.use('/api/comments', commentRoutes);
 
 // Root route - serve index.html
 app.get('/', (req, res) => {
