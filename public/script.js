@@ -1213,7 +1213,14 @@ function closeCommentModal() {
 
 async function loadCommentsForMessage(messageId) {
   try {
-    const response = await fetch(API_BASE + `/api/comments/${messageId}`);
+    const headers = {};
+    if (authToken) {
+      headers['Authorization'] = `Bearer ${authToken}`;
+    }
+
+    const response = await fetch(API_BASE + `/api/comments/${messageId}`, {
+      headers
+    });
     const data = await response.json();
 
     if (response.ok) {
@@ -1245,6 +1252,19 @@ function displayComments(comments) {
       year: 'numeric'
     });
 
+    // Only show edit and delete buttons if current user is the author
+    const isAuthor = comment.isAuthor === true;
+    const buttonsHTML = isAuthor ? `
+      <div style="display: flex; gap: 5px;">
+        <button onclick="showEditCommentModal('${comment._id}', '${escapeHtml(comment.comment_text).replace(/'/g, "\\'")}', '${currentCommentingMessageId}')" style="background: #4CAF50; color: white; border: none; padding: 4px 8px; border-radius: 3px; cursor: pointer; font-size: 11px;">
+          ✏️
+        </button>
+        <button onclick="showDeleteCommentModal('${comment._id}')" style="background: #dc3545; color: white; border: none; padding: 4px 8px; border-radius: 3px; cursor: pointer; font-size: 11px;">
+          🗑️
+        </button>
+      </div>
+    ` : '';
+
     return `
       <div style="background: #f9fafb; border-left: 4px solid #667eea; padding: 12px; margin-bottom: 12px; border-radius: 4px;">
         <div style="display: flex; justify-content: space-between; align-items: start; margin-bottom: 8px;">
@@ -1252,14 +1272,7 @@ function displayComments(comments) {
             <strong style="color: #667eea;">${escapeHtml(comment.commenter_name)}</strong>
             <span style="color: #999; font-size: 12px; margin-left: 8px;">${createdDate}</span>
           </div>
-          <div style="display: flex; gap: 5px;">
-            <button onclick="showEditCommentModal('${comment._id}', '${escapeHtml(comment.comment_text).replace(/'/g, "\\'")}', '${currentCommentingMessageId}')" style="background: #4CAF50; color: white; border: none; padding: 4px 8px; border-radius: 3px; cursor: pointer; font-size: 11px;">
-              ✏️
-            </button>
-            <button onclick="showDeleteCommentModal('${comment._id}')" style="background: #dc3545; color: white; border: none; padding: 4px 8px; border-radius: 3px; cursor: pointer; font-size: 11px;">
-              🗑️
-            </button>
-          </div>
+          ${buttonsHTML}
         </div>
         <p style="margin: 0; color: #333; font-size: 14px; line-height: 1.5;">${escapeHtml(comment.comment_text)}</p>
       </div>
