@@ -54,23 +54,33 @@ function showSection(sectionName) {
     loadUserProfile();
     loadUserMessages();
   }
+
+  if (sectionName === 'calendar' && authToken) {
+    loadBirthdayCalendar();
+  }
 }
 
 // ========================================
 // AUTHENTICATION
 // ========================================
+// ========================================
+// AUTHENTICATION
+// ========================================
 function setupFormListeners() {
-  // Login Form
-  document.getElementById('loginForm').addEventListener('submit', handleLogin);
+    // Login Form
+    document.getElementById('loginForm').addEventListener('submit', handleLogin);
 
-  // Register Form
-  document.getElementById('registerForm').addEventListener('submit', handleRegister);
+    // Register Form
+    document.getElementById('registerForm').addEventListener('submit', handleRegister);
 
-  // Send Message Form
-  document.getElementById('sendMessageForm').addEventListener('submit', handleSendMessage);
+    // Send Message Form
+    document.getElementById('sendMessageForm').addEventListener('submit', handleSendMessage);
 
-  // View Messages Form
-  document.getElementById('viewMessageForm').addEventListener('submit', handleViewMessages);
+    // View Messages Form
+    document.getElementById('viewMessageForm').addEventListener('submit', handleViewMessages);
+
+    // 🆕 BARU: Daftarkan form untuk menambahkan/mengedit ulang tahun
+    document.getElementById('birthdayForm').addEventListener('submit', handleBirthdaySubmit);
 }
 
 async function handleLogin(e) {
@@ -118,11 +128,9 @@ async function handleRegister(e) {
   const password = document.getElementById('registerPassword').value;
   const birthday = document.getElementById('registerBirthday').value;
 
-  // Convert birthday to MM-DD format
-  const birthdayDate = new Date(birthday);
-  const month = String(birthdayDate.getMonth() + 1).padStart(2, '0');
-  const day = String(birthdayDate.getDate()).padStart(2, '0');
-  const birthday_date = `${month}-${day}`;
+  // Convert birthday to MM-DD format (safer method to avoid timezone issues)
+  const [year, m, d] = birthday.split('-');
+  const birthday_date = `${m}-${d}`;
 
   try {
     const response = await fetch(API_BASE + '/api/auth/register', {
@@ -166,15 +174,18 @@ function logout() {
 function updateAuthUI() {
   const authBtn = document.getElementById('authBtn');
   const profileBtn = document.getElementById('profileBtn');
+  const calendarBtn = document.getElementById('calendarBtn');
   const logoutBtn = document.getElementById('logoutBtn');
 
   if (authToken) {
     authBtn.style.display = 'none';
     profileBtn.style.display = 'block';
+    calendarBtn.style.display = 'block';
     logoutBtn.style.display = 'block';
   } else {
     authBtn.style.display = 'block';
     profileBtn.style.display = 'none';
+    calendarBtn.style.display = 'none';
     logoutBtn.style.display = 'none';
   }
 }
@@ -201,13 +212,11 @@ async function handleSendMessage(e) {
 
   const sender_name = document.getElementById('senderName').value || 'Anonymous';
   const message_text = document.getElementById('messageText').value;
-  const birthdayDate = document.getElementById('birthdayDate').value;
+  const birthdayDate = document.getElementById('birthdayDateModal').value;
 
-  // Convert to MM-DD format
-  const date = new Date(birthdayDate);
-  const month = String(date.getMonth() + 1).padStart(2, '0');
-  const day = String(date.getDate()).padStart(2, '0');
-  const target_birthday = `${month}-${day}`;
+  // Convert to MM-DD format (safer method to avoid timezone issues)
+  const [year1, m1, d1] = birthdayDate.split('-');
+  const target_birthday = `${m1}-${d1}`;
 
   try {
     const headers = { 'Content-Type': 'application/json' };
@@ -243,11 +252,9 @@ async function handleViewMessages(e) {
 
   const birthdayDate = document.getElementById('viewBirthdayDate').value;
 
-  // Convert to MM-DD format
-  const date = new Date(birthdayDate);
-  const month = String(date.getMonth() + 1).padStart(2, '0');
-  const day = String(date.getDate()).padStart(2, '0');
-  const target_birthday = `${month}-${day}`;
+  // Convert to MM-DD format (safer method to avoid timezone issues)
+  const [year2, m2, d2] = birthdayDate.split('-');
+  const target_birthday = `${m2}-${d2}`;
 
   try {
     const response = await fetch(API_BASE + `/api/messages/${target_birthday}`);
@@ -756,4 +763,255 @@ async function handleEditProfile(e) {
   } finally {
     hideLoading();
   }
+}
+
+// ========================================
+// BIRTHDAY CALENDAR CRUD
+// ========================================
+let currentEditingBirthdayId = null;
+let currentDeletingBirthdayId = null;
+
+function showAddBirthdayModal() {
+  currentEditingBirthdayId = null;
+  document.getElementById('birthdayModalTitle').textContent = '➕ Add Birthday Reminder';
+  document.getElementById('birthdayForm').reset();
+  document.getElementById('birthdayDescCount').textContent = '0 / 500 characters';
+  document.getElementById('birthdayModal').style.display = 'flex';
+}
+
+function closeBirthdayModal() {
+  currentEditingBirthdayId = null;
+  document.getElementById('birthdayModal').style.display = 'none';
+}
+
+function closeBirthdayDeleteModal() {
+  currentDeletingBirthdayId = null;
+  document.getElementById('deleteBirthdayModal').style.display = 'none';
+}
+
+
+async function handleBirthdaySubmit(e) {
+  e.preventDefault();
+  showLoading();
+
+  const name = document.getElementById('birthdayName').value.trim();
+  const birthdayDate = document.getElementById('birthdayDateModal').value;
+  const description = document.getElementById('birthdayDesc').value.trim();
+  const reminder_enabled = document.getElementById('birthdayReminder').checked;
+
+  // Send 'date' as YYYY-MM-DD for backend normalization
+  try {
+    const payload = { name, date: birthdayDate, description, reminder_enabled };
+    let url = API_BASE + '/api/birthdays';
+    let method = 'POST';
+
+    if (currentEditingBirthdayId) {
+      url += `/${currentEditingBirthdayId}`;
+      method = 'PUT';
+    }
+
+    const response = await fetch(url, {
+      method,
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${authToken}`
+      },
+      body: JSON.stringify(payload)
+    });
+
+    const data = await response.json();
+
+    if (response.ok) {
+      const message = currentEditingBirthdayId ? 'Birthday updated successfully! ✏️' : 'Birthday reminder added! 📅';
+      showToast(message, 'success');
+      closeBirthdayModal();
+      loadBirthdayCalendar();
+    } else {
+      showToast(data.error || 'Failed to save birthday', 'error');
+    }
+  } catch (error) {
+    console.error('Birthday submit error:', error);
+    showToast('Connection error. Please try again.', 'error');
+  } finally {
+    hideLoading();
+  }
+}
+
+async function loadBirthdayCalendar() {
+  if (!authToken) return;
+
+  try {
+    const response = await fetch(API_BASE + '/api/birthdays', {
+      headers: { 'Authorization': `Bearer ${authToken}` }
+    });
+
+    const data = await response.json();
+
+    if (response.ok) {
+      displayBirthdayCalendar(data.birthdays);
+    } else {
+      console.error('Failed to load birthdays:', data.error);
+    }
+  } catch (error) {
+    console.error('Failed to load birthday calendar:', error);
+  }
+}
+
+function displayBirthdayCalendar(birthdays) {
+  const container = document.getElementById('birthdaysList');
+
+  if (!birthdays || birthdays.length === 0) {
+    container.innerHTML = `
+      <div class="empty-state">
+        <div class="empty-state-icon">📅</div>
+        <p>No birthday reminders yet.</p>
+        <p>Click "Add Birthday Reminder" to get started!</p>
+      </div>
+    `;
+    return;
+  }
+
+  // Defensive: filter out null/undefined
+  const validBirthdays = (birthdays || []).filter(b => b && (b.birthday_date || b.date));
+  // Sort by MM-DD
+  const sortedBirthdays = [...validBirthdays].sort((a, b) => {
+    // Use birthday_date if available, else fallback to MM-DD from date
+    const getMMDD = obj => {
+      if (obj.birthday_date) return obj.birthday_date;
+      if (obj.date) {
+        const d = new Date(obj.date);
+        return `${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;
+      }
+      return '00-00';
+    };
+    const [aMonth, aDay] = getMMDD(a).split('-');
+    const [bMonth, bDay] = getMMDD(b).split('-');
+    const aDate = parseInt(aMonth + aDay);
+    const bDate = parseInt(bMonth + bDay);
+    return aDate - bDate;
+  });
+
+  container.innerHTML = `
+    <div style="display: grid; gap: 15px;">
+      ${sortedBirthdays.map(birthday => {
+        const createdDate = new Date(birthday.createdAt || birthday.created_at).toLocaleDateString();
+        // Use birthday_date if available, else fallback to MM-DD from date
+        let mmdd = birthday.birthday_date;
+        if (!mmdd && birthday.date) {
+          const d = new Date(birthday.date);
+          mmdd = `${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;
+        }
+        const [month, day] = mmdd ? mmdd.split('-') : ['00','00'];
+        const monthNames = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+        const dateDisplay = `${monthNames[parseInt(month) - 1] || '??'} ${parseInt(day)}`;
+        return `
+          <div style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white; padding: 20px; border-radius: 10px; box-shadow: 0 4px 6px rgba(0,0,0,0.1);">
+            <div style="display: flex; justify-content: space-between; align-items: start; margin-bottom: 10px;">
+              <div>
+                <h4 style="margin: 0 0 5px 0; font-size: 18px;"> ${escapeHtml(birthday.name)}</h4>
+                <p style="margin: 0; font-size: 14px; opacity: 0.9;"> ${dateDisplay}</p>
+              </div>
+              <div style="display: flex; gap: 8px;">
+                <button onclick="showEditBirthdayModal('${birthday._id}')" style="background: #4CAF50; color: white; border: none; padding: 8px 12px; border-radius: 5px; cursor: pointer; font-weight: bold;">
+                  ✏️
+                </button>
+                <button onclick="showDeleteBirthdayModal('${birthday._id}')" style="background: #dc3545; color: white; border: none; padding: 8px 12px; border-radius: 5px; cursor: pointer; font-weight: bold;">
+                  🗑️
+                </button>
+              </div>
+            </div>
+            ${birthday.description ? `<p style=\"margin: 10px 0 0 0; font-size: 14px; opacity: 0.95;\">${escapeHtml(birthday.description)}</p>` : ''}
+            <div style="margin-top: 10px; padding-top: 10px; border-top: 1px solid rgba(255,255,255,0.2); font-size: 13px; opacity: 0.8;">
+              ${(birthday.reminder_enabled !== false ? '🔔 Reminder enabled' : '🔕 Reminder disabled')} • Added ${createdDate}
+            </div>
+          </div>
+        `;
+      }).join('')}
+    </div>
+  `;
+}
+
+async function showEditBirthdayModal(birthdayId) {
+  if (!birthdayId) {
+    showToast('Invalid birthday selected', 'error');
+    return;
+  }
+
+  try {
+    const response = await fetch(API_BASE + '/api/birthdays', {
+      headers: { 'Authorization': `Bearer ${authToken}` }
+    });
+
+    const data = await response.json();
+
+    if (response.ok) {
+      const birthday = data.birthdays.find(b => b._id === birthdayId);
+      
+      if (birthday) {
+        currentEditingBirthdayId = birthdayId;
+        document.getElementById('birthdayModalTitle').textContent = ' Edit Birthday Reminder';
+        document.getElementById('birthdayName').value = birthday.name;
+        document.getElementById('birthdayDesc').value = birthday.description;
+        document.getElementById('birthdayReminder').checked = birthday.reminder_enabled;
+        
+        // Convert MM-DD to YYYY-MM-DD for date input
+        const [month, day] = birthday.birthday_date.split('-');
+        const year = new Date().getFullYear();
+        document.getElementById('birthdayDateModal').value = `${year}-${month}-${day}`;
+        
+        document.getElementById('birthdayDescCount').textContent = `${birthday.description.length} / 500 characters`;
+        document.getElementById('birthdayModal').style.display = 'flex';
+      } else {
+        showToast('Birthday not found', 'error');
+      }
+    } else {
+      showToast('Failed to load birthday details', 'error');
+    }
+  } catch (error) {
+    console.error('Error loading birthday:', error);
+    showToast('Connection error. Please try again.', 'error');
+  }
+}
+
+function showDeleteBirthdayModal(birthdayId) {
+  if (!birthdayId || birthdayId === 'null') {
+    showToast('Invalid birthday selected', 'error');
+    return;
+  }
+  currentDeletingBirthdayId = birthdayId;
+  document.getElementById('deleteBirthdayModal').style.display = 'flex';
+}
+
+async function confirmDeleteBirthday() {
+    // Capture the ID before clearing the state
+    const birthdayIdToDelete = currentDeletingBirthdayId; 
+
+    if (!birthdayIdToDelete || birthdayIdToDelete === 'null') {
+        closeBirthdayDeleteModal();
+        showToast('Invalid birthday selected', 'error');
+        return;
+    }
+    
+    showLoading();
+    closeBirthdayDeleteModal(); // Tutup modal
+
+    try {
+        const response = await fetch(API_BASE + `/api/birthdays/${birthdayIdToDelete}`, {
+            method: 'DELETE',
+            headers: { 'Authorization': `Bearer ${authToken}` }
+        });
+
+        if (response.ok) {
+            showToast('Birthday reminder deleted! 🗑️', 'success');
+            loadBirthdayCalendar(); // Refresh list
+        } else {
+            const data = await response.json();
+            showToast(data.error || 'Failed to delete birthday', 'error');
+        }
+    } catch (error) {
+        console.error('Delete birthday error:', error);
+        showToast('Connection error. Please try again.', 'error');
+    } finally {
+        hideLoading();
+    }
 }

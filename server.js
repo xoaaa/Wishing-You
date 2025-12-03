@@ -8,6 +8,7 @@ const { setupCronJobs } = require('./utils/cronJobs');
 // Import routes
 const authRoutes = require('./routes/auth');
 const messageRoutes = require('./routes/messages');
+const birthdayRoutes = require('./routes/birthdays');
 
 const app = express();
 const PORT = process.env.PORT || 5000;
@@ -16,7 +17,7 @@ const PORT = process.env.PORT || 5000;
 if (!process.env.JWT_SECRET) {
   // For development convenience create a temporary secret and warn the developer
   process.env.JWT_SECRET = 'dev-secret-please-change';
-  console.warn('⚠️  Warning: JWT_SECRET is not set. Using a temporary development secret.\n⚠️  Set JWT_SECRET in your .env for production.');
+  console.warn('Warning: JWT_SECRET is not set. Using a temporary development secret.\n  Set JWT_SECRET in your .env for production.');
 }
 
 // Simple CORS middleware to allow cross-origin requests during development
@@ -49,6 +50,7 @@ app.use(express.static(path.join(__dirname, 'public')));
 // API Routes
 app.use('/api/auth', authRoutes);
 app.use('/api/messages', messageRoutes);
+app.use('/api/birthdays', birthdayRoutes);
 
 // Root route - serve index.html
 app.get('/', (req, res) => {

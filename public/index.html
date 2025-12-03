@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Wishing You 🎂 - Birthday Messages Platform</title>
+  <title>Wishing You</title>
   <link rel="stylesheet" href="style.css">
 </head>
 <body>
@@ -24,6 +24,7 @@
         <button class="nav-link" onclick="showSection('home')">Home</button>
         <button class="nav-link" onclick="showSection('send')">Send Message</button>
         <button class="nav-link" onclick="showSection('view')">View Messages</button>
+        <button class="nav-link" id="calendarBtn" onclick="showSection('calendar')" style="display:none;">📅 Calendar</button>
         <button class="nav-link" id="authBtn" onclick="showSection('auth')">Login</button>
         <button class="nav-link" id="profileBtn" onclick="showSection('profile')" style="display:none;">Profile</button>
         <button class="nav-link" id="logoutBtn" onclick="logout()" style="display:none;">Logout</button>
@@ -170,6 +171,77 @@
       </div>
     </div>
   </section>
+
+  <!-- Birthday Calendar Section -->
+  <section id="calendar-section" class="section">
+    <div class="container">
+      <div class="card">
+        <h2 class="card-title">📅 Birthday Calendar</h2>
+        
+        <div style="margin-bottom: 20px;">
+          <button class="btn btn-primary" onclick="showAddBirthdayModal()" style="background-color: #28a745; color: white; padding: 10px 20px; border: none; border-radius: 5px; cursor: pointer;">
+            ➕ Add Birthday Reminder
+          </button>
+        </div>
+
+        <div id="birthdaysList"></div>
+      </div>
+    </div>
+  </section>
+
+  <!-- Add/Edit Birthday Modal -->
+  <div id="birthdayModal" style="display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.5); z-index: 1000; justify-content: center; align-items: center; overflow-y: auto;">
+    <div style="background: white; padding: 30px; border-radius: 10px; max-width: 500px; box-shadow: 0 4px 15px rgba(0,0,0,0.2); margin: 50px auto;">
+      <h3 style="margin-top: 0;" id="birthdayModalTitle">➕ Add Birthday Reminder</h3>
+      <form id="birthdayForm" onsubmit="handleBirthdaySubmit(event)">
+        <div class="form-group">
+          <label for="birthdayName">Person's Name</label>
+          <input type="text" id="birthdayName" placeholder="Enter name" required>
+        </div>
+        <div class="form-group">
+          <label for="birthdayDateModal">Birthday Date</label>
+          <input type="date" id="birthdayDateModal" required>
+        </div>
+        <div class="form-group">
+          <label for="birthdayDesc">Description (Optional)</label>
+          <textarea id="birthdayDesc" rows="3" placeholder="Add a note about this person..." maxlength="500"></textarea>
+          <small id="birthdayDescCount">0 / 500 characters</small>
+        </div>
+        <div class="form-group">
+          <label style="display: flex; align-items: center; gap: 10px;">
+            <input type="checkbox" id="birthdayReminder" checked>
+            <span>Enable Reminder</span>
+          </label>
+        </div>
+        <div style="display: flex; gap: 10px; margin-top: 20px;">
+          <button type="button" onclick="closeBirthdayModal()" style="flex: 1; padding: 10px; background: #6c757d; color: white; border: none; border-radius: 5px; cursor: pointer; font-weight: bold;">
+            Cancel
+          </button>
+          <button type="submit" style="flex: 1; padding: 10px; background: #007bff; color: white; border: none; border-radius: 5px; cursor: pointer; font-weight: bold;">
+            Save
+          </button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- Delete Birthday Confirmation Modal -->
+  <div id="deleteBirthdayModal" style="display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.5); z-index: 1000; justify-content: center; align-items: center;">
+    <div style="background: white; padding: 30px; border-radius: 10px; max-width: 400px; box-shadow: 0 4px 15px rgba(0,0,0,0.2);">
+      <h3 style="margin-top: 0; color: #dc3545;">⚠️ Delete Birthday</h3>
+      <p style="color: #666; line-height: 1.6;">
+        Are you sure you want to delete this birthday reminder? This action cannot be undone.
+      </p>
+      <div style="display: flex; gap: 10px; margin-top: 20px;">
+        <button onclick="closeBirthdayDeleteModal()" style="flex: 1; padding: 10px; background: #6c757d; color: white; border: none; border-radius: 5px; cursor: pointer; font-weight: bold;">
+          Cancel
+        </button>
+        <button onclick="confirmDeleteBirthday()" style="flex: 1; padding: 10px; background: #dc3545; color: white; border: none; border-radius: 5px; cursor: pointer; font-weight: bold;">
+          Yes, Delete
+        </button>
+      </div>
+    </div>
+  </div>
 
   <!-- Profile Section -->
   <section id="profile-section" class="section">
