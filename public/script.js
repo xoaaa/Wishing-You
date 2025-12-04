@@ -864,7 +864,7 @@ async function handleBirthdaySubmit(e) {
   showLoading();
 
   const name = document.getElementById('birthdayName').value.trim();
-  const birthdayDate = document.getElementById('birthdayDate').value;
+  const birthdayDate = document.getElementById('birthdayDateModal').value;
   const description = document.getElementById('birthdayDesc').value.trim();
   const reminder_enabled = document.getElementById('birthdayReminder').checked;
 
