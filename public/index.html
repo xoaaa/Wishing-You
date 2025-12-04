@@ -7,16 +7,15 @@
   <link rel="stylesheet" href="style.css">
 </head>
 <body>
-  <!-- Background Animation -->
   <div class="background-animation">
     <div class="confetti"></div>
     <div class="confetti"></div>
     <div class="confetti"></div>
     <div class="confetti"></div>
     <div class="confetti"></div>
+    
   </div>
 
-  <!-- Navigation -->
   <nav class="navbar">
     <div class="container">
       <div class="nav-brand">🎂 Wishing You</div>
@@ -24,15 +23,14 @@
         <button class="nav-link" onclick="showSection('home')">Home</button>
         <button class="nav-link" onclick="showSection('send')">Send Message</button>
         <button class="nav-link" onclick="showSection('view')">View Messages</button>
-        <button class="nav-link" id="calendarBtn" onclick="showSection('calendar')" style="display:none;">📅 Calendar</button>
+        <button class="nav-link" id="calendarBtn" onclick="showSection('calendar')" style="display:none;">Calendar</button>
         <button class="nav-link" id="authBtn" onclick="showSection('auth')">Login</button>
         <button class="nav-link" id="profileBtn" onclick="showSection('profile')" style="display:none;">Profile</button>
-        <!-- logout button relocated to profile comments area -->
+       
       </div>
     </div>
   </nav>
 
-  <!-- Hero Section -->
   <section id="home-section" class="section active">
     <div class="container hero">
       <div class="hero-content">
@@ -40,10 +38,10 @@
         <p class="hero-subtitle">Send warm birthday wishes to anyone, anywhere in the world</p>
         <div class="hero-buttons">
           <button class="btn btn-primary" onclick="showSection('send')">
-            📝 Send a Birthday Message
+            Send a Birthday Message!
           </button>
           <button class="btn btn-secondary" onclick="showSection('view')">
-            🎁 Open Your Gift
+            Open Your Gift
           </button>
         </div>
       </div>
@@ -55,20 +53,17 @@
     </div>
   </section>
 
-  <!-- Send Message Section -->
   <section id="send-section" class="section">
     <div class="container">
       <div class="card">
-        <h2 class="card-title">📝 Send a Birthday Message</h2>
+        <h2 class="card-title">Send a Birthday Message</h2>
         <form id="sendMessageForm">
-          <!-- Sender input for guests; for logged-in users we show anonymous toggle and username -->
           <div class="form-group" id="senderNameGroup">
             <label for="senderName">Your Name (Optional)</label>
             <input type="text" id="senderName" placeholder="Leave blank to be Anonymous">
           </div>
 
-          <!-- Logged-in users will use the same 'Your Name' input (prefilled) -->
-
+          
           <div class="form-group">
             <label for="recipientUsername">Recipient Username (Optional)</label>
             <input type="text" id="recipientUsername" placeholder="Enter recipient's username (optional)">
@@ -88,18 +83,17 @@
           </div>
 
           <button type="submit" class="btn btn-primary btn-block">
-            🎂 Send Birthday Wishes
+            Send Birthday Wishes
           </button>
         </form>
       </div>
     </div>
   </section>
 
-  <!-- View Messages Section -->
   <section id="view-section" class="section">
     <div class="container">
       <div class="card">
-        <h2 class="card-title">🎁 Open Your Birthday Gift</h2>
+        <h2 class="card-title">Open Your Birthday Gift</h2>
         <p style="text-align: center; color: #666; margin-bottom: 20px;">
           Select your birthday date to see all the wishes waiting for you!
         </p>
@@ -110,7 +104,7 @@
             <input type="date" id="viewBirthdayDate" required>
           </div>
           <button type="submit" class="btn btn-primary btn-block">
-            🎉 Show Birthday Messages
+            Show Birthday Messages
           </button>
         </form>
 
@@ -125,12 +119,10 @@
     </div>
   </section>
 
-  <!-- Comment on Message Modal -->
   <div id="commentModal" style="display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.5); z-index: 1000; justify-content: center; align-items: center; overflow-y: auto;">
     <div style="background: white; padding: 30px; border-radius: 10px; max-width: 600px; box-shadow: 0 4px 15px rgba(0,0,0,0.2); margin: 50px auto;">
       <h3 style="margin-top: 0;" id="commentModalTitle">💬 Comments</h3>
       
-      <!-- Add Comment Form -->
       <form id="commentForm" onsubmit="handleAddComment(event)" style="margin-bottom: 20px; padding-bottom: 20px; border-bottom: 2px solid #e5e7eb;">
         <div class="form-group">
           <label for="commentName">Your Name (Optional)</label>
@@ -146,12 +138,10 @@
         </button>
       </form>
 
-      <!-- Comments List -->
       <div id="commentsContainer" style="max-height: 400px; overflow-y: auto;">
         <div id="commentsList"></div>
       </div>
 
-      <!-- Close Button -->
       <div style="margin-top: 20px;">
         <button onclick="closeCommentModal()" style="width: 100%; padding: 10px; background: #6c757d; color: white; border: none; border-radius: 5px; cursor: pointer; font-weight: bold;">
           Close
@@ -160,11 +150,10 @@
     </div>
   </div>
 
-  <!-- Auth Section (Login/Register) -->
   <section id="auth-section" class="section">
     <div class="container">
       <div class="auth-container">
-        <!-- Login Form -->
+      
         <div class="card" id="loginCard">
           <h2 class="card-title">🔐 Login</h2>
           <form id="loginForm">
@@ -184,7 +173,6 @@
           </p>
         </div>
 
-        <!-- Register Form -->
         <div class="card" id="registerCard" style="display: none;">
           <h2 class="card-title">📝 Register</h2>
           <form id="registerForm">
@@ -216,15 +204,14 @@
     </div>
   </section>
 
-  <!-- Birthday Calendar Section -->
   <section id="calendar-section" class="section">
     <div class="container">
       <div class="card">
-        <h2 class="card-title">📅 Birthday Calendar</h2>
+        <h2 class="card-title">Birthday Calendar</h2>
         
         <div style="margin-bottom: 20px;">
           <button class="btn btn-primary" onclick="showAddBirthdayModal()" style="background-color: #28a745; color: white; padding: 10px 20px; border: none; border-radius: 5px; cursor: pointer;">
-            ➕ Add Birthday Reminder
+            + Add Birthday Reminder
           </button>
         </div>
 
@@ -233,10 +220,9 @@
     </div>
   </section>
 
-  <!-- Add/Edit Birthday Modal -->
   <div id="birthdayModal" style="display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.5); z-index: 1000; justify-content: center; align-items: center; overflow-y: auto;">
     <div style="background: white; padding: 30px; border-radius: 10px; max-width: 500px; box-shadow: 0 4px 15px rgba(0,0,0,0.2); margin: 50px auto;">
-      <h3 style="margin-top: 0;" id="birthdayModalTitle">➕ Add Birthday Reminder</h3>
+      <h3 style="margin-top: 0;" id="birthdayModalTitle">+ Add Birthday Reminder</h3>
       <form id="birthdayForm" onsubmit="handleBirthdaySubmit(event)">
         <div class="form-group">
           <label for="birthdayName">Person's Name</label>
@@ -269,7 +255,6 @@
     </div>
   </div>
 
-  <!-- Delete Birthday Confirmation Modal -->
   <div id="deleteBirthdayModal" style="display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.5); z-index: 1000; justify-content: center; align-items: center;">
     <div style="background: white; padding: 30px; border-radius: 10px; max-width: 400px; box-shadow: 0 4px 15px rgba(0,0,0,0.2);">
       <h3 style="margin-top: 0; color: #dc3545;">⚠️ Delete Birthday</h3>
@@ -287,7 +272,6 @@
     </div>
   </div>
 
-  <!-- Profile Section -->
   <section id="profile-section" class="section">
     <div class="container">
       <div class="card">
@@ -316,8 +300,7 @@
         <div id="commentsReceivedSection" style="margin-top: 30px; display: none;">
           <h3>💬 Comments I Received</h3>
           <div id="commentsReceived">
-            <!-- Populated by script.js: shows comments left by others on messages you sent -->
-          </div>
+            </div>
         </div>
 
         <div style="margin-top: 30px;">
@@ -329,7 +312,6 @@
     </div>
   </section>
 
-  <!-- Delete Account Confirmation Modal -->
   <div id="deleteAccountModal" style="display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.5); z-index: 1000; justify-content: center; align-items: center;">
     <div style="background: white; padding: 30px; border-radius: 10px; max-width: 400px; box-shadow: 0 4px 15px rgba(0,0,0,0.2);">
       <h3 style="margin-top: 0; color: #dc3545;">⚠️ Delete Account</h3>
@@ -347,7 +329,6 @@
     </div>
   </div>
 
-  <!-- Edit Profile Modal -->
   <div id="editProfileModal" style="display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.5); z-index: 1000; justify-content: center; align-items: center; overflow-y: auto;">
     <div style="background: white; padding: 30px; border-radius: 10px; max-width: 500px; box-shadow: 0 4px 15px rgba(0,0,0,0.2); margin: 50px auto;">
       <h3 style="margin-top: 0;">✏️ Edit Profile</h3>
@@ -372,7 +353,6 @@
     </div>
   </div>
 
-  <!-- Edit Message Modal -->
   <div id="editMessageModal" style="display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.5); z-index: 1000; justify-content: center; align-items: center; overflow-y: auto;">
     <div style="background: white; padding: 30px; border-radius: 10px; max-width: 500px; box-shadow: 0 4px 15px rgba(0,0,0,0.2); margin: 50px auto;">
       <h3 style="margin-top: 0;">✏️ Edit Message</h3>
@@ -398,7 +378,6 @@
     </div>
   </div>
 
-  <!-- Delete Message Confirmation Modal -->
   <div id="deleteMessageModal" style="display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.5); z-index: 1000; justify-content: center; align-items: center;">
     <div style="background: white; padding: 30px; border-radius: 10px; max-width: 400px; box-shadow: 0 4px 15px rgba(0,0,0,0.2);">
       <h3 style="margin-top: 0; color: #dc3545;">⚠️ Delete Message</h3>
@@ -416,10 +395,8 @@
     </div>
   </div>
 
-  <!-- Toast Notification -->
   <div id="toast" class="toast"></div>
 
-  <!-- Loading Spinner -->
   <div id="loadingSpinner" class="loading-spinner" style="display: none;">
     <div class="spinner"></div>
   </div>

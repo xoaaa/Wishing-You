@@ -12,7 +12,7 @@ const messageSchema = new mongoose.Schema({
     maxlength: 1000
   },
   target_birthday: {
-    type: String, // Format: MM-DD (contoh: "12-25")
+    type: String, 
     required: [true, 'Target birthday is required'],
     match: [/^\d{2}-\d{2}$/, 'Birthday must be in MM-DD format']
   },
@@ -24,7 +24,7 @@ const messageSchema = new mongoose.Schema({
   user_id: {
     type: mongoose.Schema.Types.ObjectId,
     ref: 'User',
-    default: null // Null jika anonymous
+    default: null 
   },
   reactions: [{
     emoji: String,

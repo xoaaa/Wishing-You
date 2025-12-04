@@ -22,7 +22,7 @@ const userSchema = new mongoose.Schema({
     minlength: 6
   },
   birthday_date: {
-    type: String, // Format: MM-DD (contoh: "05-23" untuk 23 Mei)
+    type: String, 
     required: [true, 'Birthday date is required'],
     match: [/^\d{2}-\d{2}$/, 'Birthday must be in MM-DD format']
   },
