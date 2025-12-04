@@ -7,13 +7,12 @@ const BirthdaySchema = new mongoose.Schema({
       type: Boolean,
       default: true,
     },
-  // Menghubungkan ulang tahun dengan pengguna yang menyimpannya
+  
   userId: {
     type: mongoose.Schema.Types.ObjectId,
     ref: 'User',
     required: true,
   },
-  // Nama orang yang ulang tahunnya akan diingat
   name: {
     type: String,
     required: true,

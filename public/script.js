@@ -1,30 +1,21 @@
-// ========================================
-// GLOBAL STATE
-// ========================================
+
 let currentUser = null;
 let authToken = localStorage.getItem('token');
-// Base URL for API requests (ensure this matches your running server)
 const API_BASE = 'http://localhost:5000';
 
-// ========================================
-// INITIALIZATION
-// ========================================
 document.addEventListener('DOMContentLoaded', () => {
-  // Check if user is logged in
+ 
   if (authToken) {
     loadUserProfile();
   }
 
-  // Setup form listeners
   setupFormListeners();
 
-  // Character counter for message
   document.getElementById('messageText').addEventListener('input', (e) => {
     const charCount = e.target.value.length;
     document.getElementById('charCount').textContent = `${charCount} / 1000 characters`;
   });
 
-  // Character counter for edit message
   const editMessageText = document.getElementById('editMessageText');
   if (editMessageText) {
     editMessageText.addEventListener('input', (e) => {
@@ -33,7 +24,6 @@ document.addEventListener('DOMContentLoaded', () => {
     });
   }
 
-  // Character counter for birthday description (add/edit)
   const birthdayDesc = document.getElementById('birthdayDesc');
   if (birthdayDesc) {
     birthdayDesc.addEventListener('input', (e) => {
@@ -43,7 +33,6 @@ document.addEventListener('DOMContentLoaded', () => {
     });
   }
 
-  // Character counter for comment
   const commentText = document.getElementById('commentText');
   if (commentText) {
     commentText.addEventListener('input', (e) => {
@@ -54,22 +43,17 @@ document.addEventListener('DOMContentLoaded', () => {
   }
 });
 
-// ========================================
-// NAVIGATION
-// ========================================
 function showSection(sectionName) {
   // Hide all sections
   document.querySelectorAll('.section').forEach(section => {
     section.classList.remove('active');
   });
 
-  // Show selected section
   const section = document.getElementById(`${sectionName}-section`);
   if (section) {
     section.classList.add('active');
   }
 
-  // Load data if needed
   if (sectionName === 'profile' && authToken) {
     loadUserProfile();
     loadUserMessages();
@@ -80,26 +64,11 @@ function showSection(sectionName) {
   }
 }
 
-// ========================================
-// AUTHENTICATION
-// ========================================
-// ========================================
-// AUTHENTICATION
-// ========================================
 function setupFormListeners() {
-    // Login Form
     document.getElementById('loginForm').addEventListener('submit', handleLogin);
-
-    // Register Form
     document.getElementById('registerForm').addEventListener('submit', handleRegister);
-
-    // Send Message Form
     document.getElementById('sendMessageForm').addEventListener('submit', handleSendMessage);
-
-    // View Messages Form
     document.getElementById('viewMessageForm').addEventListener('submit', handleViewMessages);
-
-    // 🆕 BARU: Daftarkan form untuk menambahkan/mengedit ulang tahun
     document.getElementById('birthdayForm').addEventListener('submit', handleBirthdaySubmit);
 }
 
@@ -124,7 +93,7 @@ async function handleLogin(e) {
       currentUser = data.user;
       localStorage.setItem('token', authToken);
       
-      showToast('Login successful! Welcome back 🎉', 'success');
+      showToast('Login successful! Welcome back', 'success');
       updateAuthUI();
       showSection('home');
       
@@ -148,7 +117,6 @@ async function handleRegister(e) {
   const password = document.getElementById('registerPassword').value;
   const birthday = document.getElementById('registerBirthday').value;
 
-  // Convert birthday to MM-DD format (safer method to avoid timezone issues)
   const [year, m, d] = birthday.split('-');
   const birthday_date = `${m}-${d}`;
 
@@ -166,7 +134,7 @@ async function handleRegister(e) {
       currentUser = data.user;
       localStorage.setItem('token', authToken);
       
-      showToast('Registration successful! Welcome to Wishing You 🎂', 'success');
+      showToast('Registration successful! Welcome to Wishing You', 'success');
       updateAuthUI();
       showSection('home');
       
@@ -209,17 +177,13 @@ function updateAuthUI() {
     if (profileLogoutBtn) profileLogoutBtn.style.display = 'none';
   }
 
-  // Ensure sender name input is visible for both guests and logged-in users
   const senderGroup = document.getElementById('senderNameGroup');
   const senderNameInput = document.getElementById('senderName');
 
   if (senderGroup) senderGroup.style.display = 'block';
-  // Prefill name for logged-in users
   if (authToken && currentUser && senderNameInput) {
     senderNameInput.value = currentUser.username || '';
   } else if (senderNameInput) {
-    // don't overwrite guest-entered names when not logged in
-    // leave as-is (empty or previously entered)
   }
 }
 
@@ -236,9 +200,6 @@ function toggleAuth() {
   }
 }
 
-// ========================================
-// MESSAGES
-// ========================================
 async function handleSendMessage(e) {
   e.preventDefault();
   showLoading();
@@ -246,13 +207,9 @@ async function handleSendMessage(e) {
   let sender_name = 'Anonymous';
   const message_text = document.getElementById('messageText').value;
   const birthdayDate = document.getElementById('birthdayDate').value;
-  // Read the sender name input (prefilled for logged-in users)
   const nameEl = document.getElementById('senderName');
   if (nameEl) sender_name = nameEl.value.trim() || 'Anonymous';
-  // Optional recipient username
   const recipient_username = (document.getElementById('recipientUsername') && document.getElementById('recipientUsername').value.trim()) || null;
-
-  // Convert to MM-DD format (safer method to avoid timezone issues)
   const [year1, m1, d1] = birthdayDate.split('-');
   const target_birthday = `${m1}-${d1}`;
 
@@ -271,7 +228,7 @@ async function handleSendMessage(e) {
     const data = await response.json();
 
     if (response.ok) {
-      showToast('Birthday message sent successfully! 🎉', 'success');
+      showToast('Birthday message sent successfully!', 'success');
       document.getElementById('sendMessageForm').reset();
       document.getElementById('charCount').textContent = '0 / 1000 characters';
     } else {
@@ -362,9 +319,6 @@ function displayMessages(data) {
   container.style.display = 'block';
 }
 
-// ========================================
-// PROFILE
-// ========================================
 async function loadUserProfile() {
   if (!authToken) return;
 
@@ -379,7 +333,6 @@ async function loadUserProfile() {
       currentUser = data.user;
       updateAuthUI();
       displayProfile(data.user);
-      // Load comments received on user's sent messages
       loadCommentsReceived();
     } else {
       logout();
@@ -389,9 +342,6 @@ async function loadUserProfile() {
   }
 }
 
-// ========================================
-// COMMENTS I RECEIVED (comments left on messages the user SENT)
-// ========================================
 async function loadCommentsReceived() {
   if (!authToken) return;
 
@@ -410,17 +360,14 @@ async function loadCommentsReceived() {
     }
 
     if (!data.received || data.received.length === 0) {
-        // Hide the entire section if there are no comments received
         const section = document.getElementById('commentsReceivedSection');
         if (section) section.style.display = 'none';
         container.innerHTML = '';
       return;
     }
-      // Show section header
       const section = document.getElementById('commentsReceivedSection');
       if (section) section.style.display = 'block';
 
-      // Render each message as a card with nested comment cards inside
       container.innerHTML = data.received.map(item => {
         const comments = item.comments || [];
         const commentsHtml = comments.map(c => `
@@ -480,20 +427,17 @@ async function loadUserMessages() {
   if (!authToken) return;
 
   try {
-    // Load sent messages
     const sentResponse = await fetch(API_BASE + '/api/messages/user/sent', {
       headers: { 'Authorization': `Bearer ${authToken}` }
     });
     const sentData = await sentResponse.json();
 
-    // Load received messages
     const receivedResponse = await fetch(API_BASE + '/api/messages/user/received', {
       headers: { 'Authorization': `Bearer ${authToken}` }
     });
     const receivedData = await receivedResponse.json();
 
     displaySentMessages(sentData);
-    // Wait for received messages display (it will also fetch comments previews)
     await displayReceivedMessages(receivedData);
   } catch (error) {
     console.error('Failed to load user messages:', error);
@@ -502,8 +446,6 @@ async function loadUserMessages() {
 
 function displaySentMessages(data) {
   const container = document.getElementById('sentMessages');
-
-  // Handle missing or malformed data
   const messages = data && data.messages ? data.messages : [];
 
   console.log('displaySentMessages: received messages count =', messages.length);
@@ -522,11 +464,8 @@ function displaySentMessages(data) {
     `;
   } else {
     container.innerHTML = messages.map(msg => {
-      // Ensure we have a usable id string for data attributes
       const safeId = (msg._id && msg._id.toString) ? msg._id.toString() : (msg.id ? msg.id : '');
-      // Determine recipient display: prefer recipient_username provided by API, else show birthday
       const recipientDisplay = msg.recipient_username ? `${msg.recipient_username}` : `To: ${msg.target_birthday}`;
-      // Store data in data attributes instead of inline onclick
       return `
         <div class="message-card">
           <div class="message-header">
@@ -546,7 +485,6 @@ function displaySentMessages(data) {
       `;
     }).join('');
 
-    // Attach event listeners
     document.querySelectorAll('.edit-msg-btn').forEach(btn => {
       btn.addEventListener('click', function() {
         const msgId = this.dataset.msgId;
@@ -585,7 +523,6 @@ async function displayReceivedMessages(data) {
     return;
   }
 
-  // Render message cards with a placeholder for comments preview
   container.innerHTML = messages.map(msg => {
     const safeId = (msg._id && msg._id.toString) ? msg._id.toString() : (msg.id ? msg.id : '');
     const created = new Date(msg.created_at).toLocaleDateString();
@@ -609,7 +546,6 @@ async function displayReceivedMessages(data) {
     `;
   }).join('');
 
-  // For each message, fetch its comments and render a small preview
   for (const msg of messages) {
     const safeId = (msg._id && msg._id.toString) ? msg._id.toString() : (msg.id ? msg.id : '');
     const commentsContainer = document.getElementById(`received-comments-${safeId}`);
@@ -619,7 +555,7 @@ async function displayReceivedMessages(data) {
       const resp = await fetch(API_BASE + `/api/comments/${safeId}`);
       const json = await resp.json();
       if (resp.ok && Array.isArray(json.comments)) {
-        const comments = json.comments.slice(0, 2); // show up to 2 recent comments
+        const comments = json.comments.slice(0, 2);
         if (comments.length === 0) {
           commentsContainer.innerHTML = `<small style="color:#666;">No comments yet</small>`;
         } else {
@@ -646,9 +582,6 @@ async function displayReceivedMessages(data) {
   }
 }
 
-// ========================================
-// UI UTILITIES
-// ========================================
 function showToast(message, type = 'success') {
   const toast = document.getElementById('toast');
   toast.textContent = message;
@@ -678,9 +611,6 @@ function escapeHtml(text) {
   return text.replace(/[&<>"']/g, m => map[m]);
 }
 
-// ========================================
-// DELETE ACCOUNT
-// ========================================
 function showDeleteAccountModal() {
   document.getElementById('deleteAccountModal').style.display = 'flex';
 }
@@ -700,8 +630,7 @@ async function confirmDeleteAccount() {
     });
 
     if (response.ok) {
-      showToast('Account deleted successfully. Goodbye! 👋', 'success');
-      // Clear user data and redirect to home
+      showToast('Account deleted successfully. Thx', 'success');
       authToken = null;
       currentUser = null;
       localStorage.removeItem('token');
@@ -719,20 +648,15 @@ async function confirmDeleteAccount() {
   }
 }
 
-// ========================================
-// EDIT & DELETE MESSAGES
-// ========================================
 let currentEditingMessageId = null;
 
 function showEditMessageModal(messageId, targetBirthday, messageText) {
   currentEditingMessageId = messageId;
   document.getElementById('editMessageText').value = messageText;
   
-  // Convert MM-DD to YYYY-MM-DD for date input
   const year = new Date().getFullYear();
   document.getElementById('editMessageBirthday').value = `${year}-${targetBirthday}`;
   
-  // Update char count
   const charCount = messageText.length;
   document.getElementById('editCharCount').textContent = `${charCount} / 1000 characters`;
   
@@ -757,7 +681,6 @@ async function handleEditMessage(e) {
     return;
   }
 
-  // Convert to MM-DD format
   const date = new Date(birthdayDate);
   const month = String(date.getMonth() + 1).padStart(2, '0');
   const day = String(date.getDate()).padStart(2, '0');
@@ -776,9 +699,9 @@ async function handleEditMessage(e) {
     const data = await response.json();
 
     if (response.ok) {
-      showToast('Message updated successfully! ✏️', 'success');
+      showToast('Message updated successfully!', 'success');
       closeEditMessageModal();
-      loadUserMessages(); // Refresh the messages list
+      loadUserMessages(); 
     } else {
       showToast(data.error || 'Failed to update message', 'error');
     }
@@ -793,7 +716,6 @@ async function handleEditMessage(e) {
 let currentDeletingMessageId = null;
 
 function showDeleteMessageModal(messageId) {
-  // Validate the id early and refuse to open modal if invalid
   if (!messageId || messageId === 'null' || messageId === 'undefined') {
     console.error('showDeleteMessageModal called with invalid id:', messageId);
     showToast('Invalid message selected. Please try again.', 'error');
@@ -809,10 +731,8 @@ function closeDeleteMessageModal() {
 }
 
 async function confirmDeleteMessage() {
-  // Capture the id BEFORE closing the modal (which clears the variable)
   const messageIdToDelete = currentDeletingMessageId;
   
-  // Defensive check: ensure we have a valid id before calling API
   if (!messageIdToDelete || messageIdToDelete === 'null') {
     console.error('confirmDeleteMessage called with invalid id:', messageIdToDelete);
     closeDeleteMessageModal();
@@ -831,8 +751,8 @@ async function confirmDeleteMessage() {
     });
 
     if (response.ok) {
-      showToast('Message deleted successfully! 🗑️', 'success');
-      loadUserMessages(); // Refresh the messages list
+      showToast('Message deleted successfully!', 'success');
+      loadUserMessages(); 
     } else {
       const data = await response.json();
       showToast(data.error || 'Failed to delete message', 'error');
@@ -845,11 +765,7 @@ async function confirmDeleteMessage() {
   }
 }
 
-// ========================================
-// EDIT PROFILE
-// ========================================
 function showEditProfileModal() {
-  // Pre-fill the form with current user data
   if (currentUser) {
     document.getElementById('editUsername').value = currentUser.username || '';
     document.getElementById('editBirthday').value = convertBirthdayToDateInput(currentUser.birthday_date) || '';
@@ -861,7 +777,6 @@ function closeEditProfileModal() {
   document.getElementById('editProfileModal').style.display = 'none';
 }
 
-// Convert MM-DD format to YYYY-MM-DD for date input (use current year)
 function convertBirthdayToDateInput(birthdayMmDd) {
   if (!birthdayMmDd || !birthdayMmDd.includes('-')) return '';
   const [month, day] = birthdayMmDd.split('-');
@@ -876,7 +791,6 @@ async function handleEditProfile(e) {
   const username = document.getElementById('editUsername').value.trim();
   const birthdayDate = document.getElementById('editBirthday').value;
 
-  // Convert birthday back to MM-DD format
   let birthday_date = null;
   if (birthdayDate) {
     const date = new Date(birthdayDate);
@@ -909,7 +823,7 @@ async function handleEditProfile(e) {
 
     if (response.ok) {
       currentUser = data.user;
-      showToast('Profile updated successfully! 🎉', 'success');
+      showToast('Profile updated successfully!', 'success');
       displayProfile(currentUser);
       closeEditProfileModal();
     } else {
@@ -923,9 +837,6 @@ async function handleEditProfile(e) {
   }
 }
 
-// ========================================
-// BIRTHDAY CALENDAR CRUD
-// ========================================
 let currentEditingBirthdayId = null;
 let currentDeletingBirthdayId = null;
 
@@ -957,7 +868,6 @@ async function handleBirthdaySubmit(e) {
   const description = document.getElementById('birthdayDesc').value.trim();
   const reminder_enabled = document.getElementById('birthdayReminder').checked;
 
-  // Send 'date' as YYYY-MM-DD for backend normalization
   try {
     const payload = { name, date: birthdayDate, description, reminder_enabled };
     let url = API_BASE + '/api/birthdays';
@@ -980,7 +890,7 @@ async function handleBirthdaySubmit(e) {
     const data = await response.json();
 
     if (response.ok) {
-      const message = currentEditingBirthdayId ? 'Birthday updated successfully! ✏️' : 'Birthday reminder added! 📅';
+      const message = currentEditingBirthdayId ? 'Birthday updated successfully! ' : 'Birthday reminder added!';
       showToast(message, 'success');
       closeBirthdayModal();
       loadBirthdayCalendar();
@@ -1029,11 +939,8 @@ function displayBirthdayCalendar(birthdays) {
     return;
   }
 
-  // Defensive: filter out null/undefined
   const validBirthdays = (birthdays || []).filter(b => b && (b.birthday_date || b.date));
-  // Sort by MM-DD
   const sortedBirthdays = [...validBirthdays].sort((a, b) => {
-    // Use birthday_date if available, else fallback to MM-DD from date
     const getMMDD = obj => {
       if (obj.birthday_date) return obj.birthday_date;
       if (obj.date) {
@@ -1053,7 +960,6 @@ function displayBirthdayCalendar(birthdays) {
     <div style="display: grid; gap: 15px;">
       ${sortedBirthdays.map(birthday => {
         const createdDate = new Date(birthday.createdAt || birthday.created_at).toLocaleDateString();
-        // Use birthday_date if available, else fallback to MM-DD from date
         let mmdd = birthday.birthday_date;
         if (!mmdd && birthday.date) {
           const d = new Date(birthday.date);
@@ -1110,16 +1016,13 @@ async function showEditBirthdayModal(birthdayId) {
         document.getElementById('birthdayModalTitle').textContent = ' Edit Birthday Reminder';
         document.getElementById('birthdayName').value = birthday.name || '';
 
-        // Description may be undefined
         const desc = birthday.description || '';
         document.getElementById('birthdayDesc').value = desc;
         document.getElementById('birthdayDescCount').textContent = `${desc.length} / 500 characters`;
 
-        // reminder_enabled may be undefined in older records; default to true
         const reminderFlag = typeof birthday.reminder_enabled === 'boolean' ? birthday.reminder_enabled : true;
         document.getElementById('birthdayReminder').checked = reminderFlag;
 
-        // Determine date: prefer birthday_date (MM-DD), else fallback to date field
         let mmdd = birthday.birthday_date;
         if (!mmdd && birthday.date) {
           const d = new Date(birthday.date);
@@ -1156,7 +1059,6 @@ function showDeleteBirthdayModal(birthdayId) {
 }
 
 async function confirmDeleteBirthday() {
-    // Capture the ID before clearing the state
     const birthdayIdToDelete = currentDeletingBirthdayId; 
 
     if (!birthdayIdToDelete || birthdayIdToDelete === 'null') {
@@ -1166,7 +1068,7 @@ async function confirmDeleteBirthday() {
     }
     
     showLoading();
-    closeBirthdayDeleteModal(); // Tutup modal
+    closeBirthdayDeleteModal(); 
 
     try {
         const response = await fetch(API_BASE + `/api/birthdays/${birthdayIdToDelete}`, {
@@ -1175,8 +1077,8 @@ async function confirmDeleteBirthday() {
         });
 
         if (response.ok) {
-            showToast('Birthday reminder deleted! 🗑️', 'success');
-            loadBirthdayCalendar(); // Refresh list
+            showToast('Birthday reminder deleted!', 'success');
+            loadBirthdayCalendar(); 
         } else {
             const data = await response.json();
             showToast(data.error || 'Failed to delete birthday', 'error');
@@ -1189,9 +1091,6 @@ async function confirmDeleteBirthday() {
     }
 }
 
-// ========================================
-// COMMENTS (NEW: CRUD for message comments)
-// ========================================
 let currentCommentingMessageId = null;
 let currentEditingCommentId = null;
 let currentDeletingCommentId = null;
@@ -1252,7 +1151,6 @@ function displayComments(comments) {
       year: 'numeric'
     });
 
-    // Only show edit and delete buttons if current user is the author
     const isAuthor = comment.isAuthor === true;
     const buttonsHTML = isAuthor ? `
       <div style="display: flex; gap: 5px;">
@@ -1301,7 +1199,6 @@ async function handleAddComment(e) {
     }
 
     let response;
-    // If editing an existing comment, perform PUT; otherwise POST a new comment
     if (currentEditingCommentId) {
       response = await fetch(API_BASE + `/api/comments/${currentEditingCommentId}`, {
         method: 'PUT',
@@ -1319,13 +1216,12 @@ async function handleAddComment(e) {
     const data = await response.json();
 
     if (response.ok) {
-      const successMsg = currentEditingCommentId ? 'Comment updated! ✏️' : 'Comment posted! 💬';
+      const successMsg = currentEditingCommentId ? 'Comment updated!' : 'Comment posted!';
       showToast(successMsg, 'success');
       document.getElementById('commentForm').reset();
       // Clear edit state
       currentEditingCommentId = null;
       loadCommentsForMessage(message_id);
-      // Refresh "Comments I Received" (in case the current user is the message owner)
       try { loadCommentsReceived(); } catch (e) { /* ignore */ }
     } else {
       showToast(data.error || (currentEditingCommentId ? 'Failed to update comment' : 'Failed to post comment'), 'error');
@@ -1342,7 +1238,6 @@ function showEditCommentModal(commentId, commentText, messageId) {
   currentEditingCommentId = commentId;
   document.getElementById('commentText').value = commentText;
   document.getElementById('commentCharCount').textContent = `${commentText.length} / 500 characters`;
-  // Note: we could show edit mode UI here, but for simplicity we just reload after edit
 }
 
 async function saveEditComment() {
@@ -1370,7 +1265,7 @@ async function saveEditComment() {
     const data = await response.json();
 
     if (response.ok) {
-      showToast('Comment updated! ✏️', 'success');
+      showToast('Comment updated!', 'success');
       currentEditingCommentId = null;
       loadCommentsForMessage(currentCommentingMessageId);
     } else {
@@ -1406,7 +1301,7 @@ async function confirmDeleteComment() {
     });
 
     if (response.ok) {
-      showToast('Comment deleted! 🗑️', 'success');
+      showToast('Comment deleted!', 'success');
       loadCommentsForMessage(currentDeletingCommentForMessage);
     } else {
       const data = await response.json();

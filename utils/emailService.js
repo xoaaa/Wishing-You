@@ -1,6 +1,5 @@
 const nodemailer = require('nodemailer');
 
-// Configure transporter: prefer custom SMTP (EMAIL_HOST/PORT), otherwise fall back to Gmail
 const emailHost = process.env.EMAIL_HOST;
 const emailPort = process.env.EMAIL_PORT ? Number(process.env.EMAIL_PORT) : undefined;
 const emailSecure = process.env.EMAIL_SECURE === 'true';
@@ -24,13 +23,12 @@ if (emailHost && emailPort) {
 
 const transporter = nodemailer.createTransport(transporterConfig);
 
-// Function untuk kirim email birthday notification
 const sendBirthdayEmail = async (userEmail, username, messageCount) => {
   try {
     const mailOptions = {
-      from: process.env.EMAIL_FROM || `"Wishing You 🎂" <${process.env.EMAIL_USER}>`,
+      from: process.env.EMAIL_FROM || `"Wishing You " <${process.env.EMAIL_USER}>`,
       to: userEmail,
-      subject: `🎉 Happy Birthday, ${username}! 🎂`,
+      subject: `Happy Birthday, ${username}!`,
       html: `
         <!DOCTYPE html>
         <html>
@@ -118,7 +116,7 @@ const sendBirthdayEmail = async (userEmail, username, messageCount) => {
         <body>
           <div class="container">
             <div class="header">
-              <h1>🎉 Happy Birthday! 🎂</h1>
+              <h1> Happy Birthday! </h1>
               <p>Dear ${username}</p>
             </div>
             <div class="content">
@@ -136,11 +134,11 @@ const sendBirthdayEmail = async (userEmail, username, messageCount) => {
                 people have written just for you.
               </p>
               <a href="${process.env.CLIENT_URL}" class="button">
-                Open Your Birthday Messages 🎁
+                Open Your Birthday Messages 
               </a>
               <p style="margin-top: 30px; color: #999; font-size: 14px;">
                 May this year bring you happiness, success, and all the wonderful 
-                things you deserve. Have an amazing birthday! 🌟
+                things you deserve. Have an amazing birthday! 
               </p>
             </div>
             <div class="footer">
@@ -154,24 +152,23 @@ const sendBirthdayEmail = async (userEmail, username, messageCount) => {
     };
 
     const info = await transporter.sendMail(mailOptions);
-    console.log(`✅ Email sent to ${userEmail}: ${info.messageId}`);
+    console.log(`Email sent to ${userEmail}: ${info.messageId}`);
     return { success: true, messageId: info.messageId };
   } catch (error) {
-    console.error(`❌ Error sending email to ${userEmail}:`, error.message);
+    console.error(`Error sending email to ${userEmail}:`, error.message);
     return { success: false, error: error.message };
   }
 };
 
-// Function untuk test email connection
 const testEmailConnection = async () => {
   try {
     await transporter.verify();
-    console.log('✅ Email service is ready to send messages');
+    console.log('Email service is ready to send messages');
     return true;
   } catch (error) {
-    console.error('❌ Email service error:', error.message);
+    console.error('Email service error:', error.message);
     if (!emailUser || !emailPass) {
-      console.error('❌ Missing EMAIL_USER or EMAIL_PASS in .env');
+      console.error('Missing EMAIL_USER or EMAIL_PASS in .env');
     }
     return false;
   }

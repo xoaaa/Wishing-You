@@ -1,6 +1,4 @@
-/* ========================================
-   RESET & BASE STYLES
-======================================== */
+
 * {
   margin: 0;
   padding: 0;
@@ -29,9 +27,6 @@ body {
   line-height: 1.6;
 }
 
-/* ========================================
-   BACKGROUND ANIMATION
-======================================== */
 .background-animation {
   position: fixed;
   top: 0;
@@ -93,9 +88,6 @@ body {
   }
 }
 
-/* ========================================
-   NAVBAR
-======================================== */
 .navbar {
   background: rgba(255, 255, 255, 0.95);
   backdrop-filter: blur(10px);
@@ -142,9 +134,6 @@ body {
   color: var(--primary-color);
 }
 
-/* ========================================
-   CONTAINER & SECTIONS
-======================================== */
 .container {
   max-width: 1200px;
   margin: 0 auto;
@@ -175,9 +164,6 @@ body {
   }
 }
 
-/* ========================================
-   HERO SECTION
-======================================== */
 .hero {
   display: flex;
   align-items: center;
@@ -239,9 +225,6 @@ body {
   }
 }
 
-/* ========================================
-   CARD
-======================================== */
 .card {
   background: white;
   border-radius: 16px;
@@ -260,9 +243,6 @@ body {
   background-clip: text;
 }
 
-/* ========================================
-   FORM STYLES
-======================================== */
 .form-group {
   margin-bottom: 1.5rem;
 }
@@ -299,9 +279,6 @@ body {
   font-size: 0.875rem;
 }
 
-/* ========================================
-   BUTTONS
-======================================== */
 .btn {
   padding: 0.75rem 2rem;
   border: none;
@@ -340,9 +317,6 @@ body {
   display: block;
 }
 
-/* ========================================
-   MESSAGES DISPLAY
-======================================== */
 .messages-header {
   text-align: center;
   margin-bottom: 2rem;
@@ -422,9 +396,6 @@ body {
   border: 1px solid var(--border-color);
 }
 
-/* ========================================
-   AUTH SECTION
-======================================== */
 .auth-container {
   max-width: 500px;
   margin: 0 auto;
@@ -446,9 +417,6 @@ body {
   text-decoration: underline;
 }
 
-/* ========================================
-   PROFILE SECTION
-======================================== */
 .profile-info {
   background: var(--light-color);
   padding: 1.5rem;
@@ -476,9 +444,6 @@ body {
   color: var(--text-color);
 }
 
-/* ========================================
-   TOAST NOTIFICATION
-======================================== */
 .toast {
   position: fixed;
   bottom: 2rem;
@@ -512,9 +477,6 @@ body {
   background: var(--warning-color);
 }
 
-/* ========================================
-   LOADING SPINNER
-======================================== */
 .loading-spinner {
   position: fixed;
   top: 0;
@@ -542,9 +504,6 @@ body {
   100% { transform: rotate(360deg); }
 }
 
-/* ========================================
-   RESPONSIVE DESIGN
-======================================== */
 @media (max-width: 768px) {
   .hero {
     flex-direction: column;
@@ -586,9 +545,6 @@ body {
   }
 }
 
-/* ========================================
-   UTILITIES
-======================================== */
 .text-center {
   text-align: center;
 }

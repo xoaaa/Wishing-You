@@ -5,26 +5,19 @@ const Message = require('../models/message');
 const auth = require('../middleware/auth');
 const mongoose = require('mongoose');
 
-// --- CREATE: Post a comment on a message ---
-// @route   POST /api/comments
-// @desc    Add a comment to a birthday message
-// @access  Public (anonymous or logged in)
 router.post('/', async (req, res) => {
   try {
     const { message_id, commenter_name, comment_text } = req.body;
 
-    // Validate input
     if (!message_id || !comment_text) {
       return res.status(400).json({ error: 'Message ID and comment text are required' });
     }
 
-    // Validate message exists
     const message = await Message.findById(message_id);
     if (!message) {
       return res.status(404).json({ error: 'Message not found' });
     }
 
-    // Extract user_id from token if present
     let user_id = null;
     const authHeader = req.header('Authorization');
     if (authHeader) {
@@ -34,11 +27,9 @@ router.post('/', async (req, res) => {
         const decoded = jwt.verify(token, process.env.JWT_SECRET);
         user_id = decoded.userId;
       } catch (err) {
-        // Continue as anonymous if token invalid
       }
     }
 
-    // Create comment
     const comment = new Comment({
       message_id,
       commenter_name: commenter_name || 'Anonymous',
@@ -57,13 +48,8 @@ router.post('/', async (req, res) => {
   }
 });
 
-// --- READ: Get comments received on messages authored by the logged-in user ---
-// @route   GET /api/comments/user/received
-// @desc    Get comments left on messages the current user has sent
-// @access  Private
 router.get('/user/received', auth, async (req, res) => {
   try {
-    // Find messages authored by the current user
     const Message = require('../models/message');
     const messages = await Message.find({ user_id: req.user._id }).select('_id message_text target_birthday created_at');
 
@@ -73,8 +59,6 @@ router.get('/user/received', auth, async (req, res) => {
       return res.json({ count: 0, received: [] });
     }
 
-    // Fetch comments for those messages, but exclude comments authored by the current user
-    // (we want 'comments received' from other people; include anonymous comments)
     const comments = await Comment.find({
       message_id: { $in: messageIds },
       $or: [
@@ -84,7 +68,6 @@ router.get('/user/received', auth, async (req, res) => {
     })
       .sort({ created_at: -1 });
 
-    // Group comments by message_id
     const grouped = {};
     comments.forEach(c => {
       const mid = c.message_id.toString();
@@ -92,7 +75,6 @@ router.get('/user/received', auth, async (req, res) => {
       grouped[mid].push(c);
     });
 
-    // Build response: list of messages with their comments, but only include messages that have comments
     const received = messages.map(m => ({
       message_id: m._id,
       message_text: m.message_text,
@@ -109,10 +91,6 @@ router.get('/user/received', auth, async (req, res) => {
   }
 });
 
-// --- READ: Get all comments for a message ---
-// @route   GET /api/comments/:message_id
-// @desc    Get all comments for a specific birthday message
-// @access  Public
 router.get('/:message_id', async (req, res) => {
   try {
     const { message_id } = req.params;
@@ -121,7 +99,6 @@ router.get('/:message_id', async (req, res) => {
       return res.status(400).json({ error: 'Invalid message ID' });
     }
 
-    // Get current user ID from token if logged in
     let currentUserId = null;
     const authHeader = req.header('Authorization');
     if (authHeader) {
@@ -131,7 +108,6 @@ router.get('/:message_id', async (req, res) => {
         const decoded = jwt.verify(token, process.env.JWT_SECRET);
         currentUserId = decoded.userId;
       } catch (err) {
-        // Continue without user ID if token invalid
       }
     }
 
@@ -139,7 +115,6 @@ router.get('/:message_id', async (req, res) => {
       .populate('user_id', 'username')
       .sort({ created_at: -1 });
 
-    // Add isAuthor flag to each comment
     const commentsWithAuthority = comments.map(comment => {
       const commentObj = comment.toObject();
       commentObj.isAuthor = currentUserId && comment.user_id && comment.user_id._id.toString() === currentUserId;
@@ -156,10 +131,6 @@ router.get('/:message_id', async (req, res) => {
   }
 });
 
-// --- UPDATE: Edit a comment (only by author) ---
-// @route   PUT /api/comments/:id
-// @desc    Update a comment
-// @access  Private (comment author only) or Public if anonymous
 router.put('/:id', async (req, res) => {
   try {
     const { id } = req.params;
@@ -173,13 +144,11 @@ router.put('/:id', async (req, res) => {
       return res.status(400).json({ error: 'Comment text is required' });
     }
 
-    // Find comment
     const comment = await Comment.findById(id);
     if (!comment) {
       return res.status(404).json({ error: 'Comment not found' });
     }
 
-    // Check authorization: allow if user is logged in and owns comment, or if it's anonymous
     let isAuthorized = false;
     const authHeader = req.header('Authorization');
     if (authHeader) {
@@ -191,11 +160,10 @@ router.put('/:id', async (req, res) => {
           isAuthorized = true;
         }
       } catch (err) {
-        // Token invalid
+       
       }
     }
 
-    // Allow anonymous comments to be edited without auth
     if (!comment.user_id) {
       isAuthorized = true;
     }
@@ -216,10 +184,6 @@ router.put('/:id', async (req, res) => {
   }
 });
 
-// --- DELETE: Delete a comment (only by author) ---
-// @route   DELETE /api/comments/:id
-// @desc    Delete a comment
-// @access  Private (comment author only) or Public if anonymous
 router.delete('/:id', async (req, res) => {
   try {
     const { id } = req.params;
@@ -232,8 +196,6 @@ router.delete('/:id', async (req, res) => {
     if (!comment) {
       return res.status(404).json({ error: 'Comment not found' });
     }
-
-    // Check authorization
     let isAuthorized = false;
     const authHeader = req.header('Authorization');
     if (authHeader) {
@@ -245,11 +207,9 @@ router.delete('/:id', async (req, res) => {
           isAuthorized = true;
         }
       } catch (err) {
-        // Token invalid
       }
     }
 
-    // Allow anonymous comments to be deleted without auth
     if (!comment.user_id) {
       isAuthorized = true;
     }

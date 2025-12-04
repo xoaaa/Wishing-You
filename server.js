@@ -19,7 +19,6 @@ if (!process.env.JWT_SECRET) {
   console.warn('Warning: JWT_SECRET is not set. Using a temporary development secret.\n  Set JWT_SECRET in your .env for production.');
 }
 
-// CORS middleware
 app.use((req, res, next) => {
   res.header('Access-Control-Allow-Origin', '*');
   res.header('Access-Control-Allow-Headers', 'Origin, X-Requested-With, Content-Type, Accept, Authorization');
@@ -37,7 +36,6 @@ setupCronJobs();
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 
-// static files frontend
 app.use(express.static(path.join(__dirname, 'public')));
 
 app.use('/api/auth', authRoutes);
@@ -45,7 +43,6 @@ app.use('/api/messages', messageRoutes);
 app.use('/api/birthdays', birthdayRoutes);
 app.use('/api/comments', commentRoutes);
 
-// Root
 app.get('/', (req, res) => {
   res.sendFile(path.join(__dirname, 'public', 'index.html'));
 });

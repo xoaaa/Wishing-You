@@ -4,25 +4,19 @@ const jwt = require('jsonwebtoken');
 const User = require('../models/user');
 const auth = require('../middleware/auth');
 
-// @route   POST /api/auth/register
-// @desc    Register new user
-// @access  Public
 router.post('/register', async (req, res) => {
   try {
     const { username, email, password, birthday_date } = req.body;
 
-    // Validasi input
     if (!username || !email || !password || !birthday_date) {
       return res.status(400).json({ error: 'Please fill all fields' });
     }
 
-    // Cek apakah user sudah ada
     const existingUser = await User.findOne({ $or: [{ email }, { username }] });
     if (existingUser) {
       return res.status(400).json({ error: 'User already exists' });
     }
 
-    // Buat user baru
     const user = new User({
       username,
       email,
@@ -32,7 +26,6 @@ router.post('/register', async (req, res) => {
 
     await user.save();
 
-    // Buat JWT token
     const token = jwt.sign({ userId: user._id }, process.env.JWT_SECRET, {
       expiresIn: '7d'
     });
@@ -52,31 +45,24 @@ router.post('/register', async (req, res) => {
   }
 });
 
-// @route   POST /api/auth/login
-// @desc    Login user
-// @access  Public
 router.post('/login', async (req, res) => {
   try {
     const { email, password } = req.body;
 
-    // Validasi input
     if (!email || !password) {
       return res.status(400).json({ error: 'Please provide email and password' });
     }
 
-    // Cari user
     const user = await User.findOne({ email });
     if (!user) {
       return res.status(401).json({ error: 'Invalid credentials' });
     }
 
-    // Check password
     const isMatch = await user.comparePassword(password);
     if (!isMatch) {
       return res.status(401).json({ error: 'Invalid credentials' });
     }
 
-    // Buat JWT token
     const token = jwt.sign({ userId: user._id }, process.env.JWT_SECRET, {
       expiresIn: '7d'
     });
@@ -96,9 +82,6 @@ router.post('/login', async (req, res) => {
   }
 });
 
-// @route   GET /api/auth/profile
-// @desc    Get user profile
-// @access  Private
 router.get('/profile', auth, async (req, res) => {
   try {
     res.json({ user: req.user });
@@ -107,9 +90,6 @@ router.get('/profile', auth, async (req, res) => {
   }
 });
 
-// @route   PUT /api/auth/profile
-// @desc    Update user profile
-// @access  Private
 router.put('/profile', auth, async (req, res) => {
   try {
     const { username, birthday_date } = req.body;
@@ -130,9 +110,6 @@ router.put('/profile', auth, async (req, res) => {
   }
 });
 
-// @route   DELETE /api/auth/profile
-// @desc    Delete user account
-// @access  Private
 router.delete('/profile', auth, async (req, res) => {
   try {
     await User.findByIdAndDelete(req.user._id);
